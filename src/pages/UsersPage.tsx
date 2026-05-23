@@ -109,12 +109,17 @@ export default function UsersPage() {
         office_id: newRole === 'office' ? newOfficeId : undefined,
       });
       // Save commission for couriers (uses profiles.commission_amount)
-      if (newRole === 'courier' && newCommission && result?.user?.id) {
-        await supabase.from('profiles').update({ commission_amount: Number(newCommission) }).eq('id', result.user.id);
+      if (newRole === 'courier' && result?.user?.id) {
+        const updates: any = {};
+        if (newCommission) updates.commission_amount = Number(newCommission);
+        if (newShippingComp) updates.shipping_compensation = Number(newShippingComp);
+        if (Object.keys(updates).length > 0) {
+          await supabase.from('profiles').update(updates).eq('id', result.user.id);
+        }
       }
       toast.success('تم إنشاء المستخدم بنجاح');
       setCreateOpen(false);
-      setNewName(''); setNewPhone(''); setNewCode(''); setNewRole(''); setNewOfficeId(''); setNewCommission('');
+      setNewName(''); setNewPhone(''); setNewCode(''); setNewRole(''); setNewOfficeId(''); setNewCommission(''); setNewShippingComp('');
       loadUsers();
     } catch (err: any) {
       toast.error(err.message || 'خطأ');
