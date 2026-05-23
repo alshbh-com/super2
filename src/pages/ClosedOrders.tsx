@@ -89,6 +89,13 @@ export default function ClosedOrders() {
     loadOrders();
   };
 
+  const updateOrderDate = async (orderId: string, field: 'collected_at' | 'return_received_at', value: string) => {
+    const { error } = await supabase.from('orders').update({ [field]: value || null } as any).eq('id', orderId);
+    if (error) { toast.error('فشل الحفظ'); return; }
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, [field]: value || null } : o));
+    toast.success('تم الحفظ');
+  };
+
   return (
     <div className="space-y-4">
       <h1 className="text-xl sm:text-2xl font-bold">الأوردرات القديمة (المقفلة)</h1>
