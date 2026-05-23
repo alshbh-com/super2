@@ -786,6 +786,12 @@ export default function OfficeAccounts() {
                           )}
                         </TableCell>
                         <TableCell className="text-sm">{getCourierName(o.courier_id)}</TableCell>
+                        <TableCell>
+                          <Input type="date" value={o.collected_at || ''} onChange={e => updateOrderDate(o.id, 'collected_at', e.target.value)} className="h-7 w-36 bg-secondary border-border text-xs" />
+                        </TableCell>
+                        <TableCell>
+                          <Input type="date" value={o.return_received_at || ''} onChange={e => updateOrderDate(o.id, 'return_received_at', e.target.value)} className="h-7 w-36 bg-secondary border-border text-xs" />
+                        </TableCell>
                         <TableCell className="text-xs hidden sm:table-cell">{createdDate}</TableCell>
                         <TableCell className="text-xs hidden md:table-cell">
                           {o.last_modified_by && (
