@@ -143,13 +143,18 @@ export default function Couriers() {
 
       {selectedCourier && (
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <h2 className="text-lg font-semibold">أوردرات المندوب</h2>
-            {selectedOrders.size > 0 && (
-              <Button size="sm" variant="destructive" onClick={closeSelected}>
-                <Lock className="h-4 w-4 ml-1" />تقفيل {selectedOrders.size} أوردر
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              <Label className="text-xs">تاريخ الاستلام:</Label>
+              <Input type="date" value={filterReceiveDate} onChange={e => setFilterReceiveDate(e.target.value)} className="h-8 w-40 bg-secondary border-border" />
+              {filterReceiveDate && <Button size="sm" variant="ghost" onClick={() => setFilterReceiveDate('')}>مسح</Button>}
+              {selectedOrders.size > 0 && (
+                <Button size="sm" variant="destructive" onClick={closeSelected}>
+                  <Lock className="h-4 w-4 ml-1" />تقفيل {selectedOrders.size} أوردر
+                </Button>
+              )}
+            </div>
           </div>
           <Card className="bg-card border-border">
             <CardContent className="p-0">
