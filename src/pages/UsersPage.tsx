@@ -147,6 +147,16 @@ export default function UsersPage() {
     loadUsers();
   };
 
+  const saveShippingComp = async (userId: string) => {
+    const v = shippingCompEdit[userId];
+    if (v === undefined) return;
+    const { error } = await supabase.from('profiles').update({ shipping_compensation: Number(v) || 0 } as any).eq('id', userId);
+    if (error) { toast.error('فشل الحفظ'); return; }
+    toast.success('تم حفظ تعويض الشحن');
+    setShippingCompEdit(prev => { const n = { ...prev }; delete n[userId]; return n; });
+    loadUsers();
+  };
+
   const updatePassword = async () => {
     if (!pwDialog || !newPw.trim()) return;
     setUpdatingPw(true);
