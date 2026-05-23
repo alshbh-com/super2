@@ -31,19 +31,24 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
   const [history, setHistory] = useState<any[]>([]);
 
   const emptyForm = {
-    customer_name: '', customer_phone: '', customer_code: '',
+    received_at: new Date().toISOString().split('T')[0],
+    sender_name: '',
+    customer_name: '', customer_phone: '', customer_phone_2: '', customer_code: '',
     product_name: '', product_id: '',
     quantity: '', price: '', delivery_price: '',
     office_id: '', status_id: '',
-    color: '', size: '', address: '', notes: '',
+    color: '', size: '', governorate: '', address: '', notes: '',
     priority: 'normal',
   };
 
   const [form, setForm] = useState(emptyForm);
 
   const mapOrderToForm = (order: any) => ({
+    received_at: order?.received_at || new Date().toISOString().split('T')[0],
+    sender_name: order?.sender_name || '',
     customer_name: order?.customer_name || '',
     customer_phone: order?.customer_phone || '',
+    customer_phone_2: order?.customer_phone_2 || '',
     customer_code: order?.customer_code || '',
     product_name: order?.product_name || '',
     product_id: order?.product_id || '',
@@ -54,6 +59,7 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
     status_id: order?.status_id || '',
     color: order?.color || '',
     size: order?.size || '',
+    governorate: order?.governorate || '',
     address: order?.address || '',
     notes: order?.notes || '',
     priority: order?.priority || 'normal',
