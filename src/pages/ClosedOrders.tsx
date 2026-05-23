@@ -162,6 +162,12 @@ export default function ClosedOrders() {
                         {order.order_statuses?.name || '-'}
                       </Badge>
                     </TableCell>
+                    <TableCell>
+                      <Input type="date" value={order.collected_at || ''} onChange={e => updateOrderDate(order.id, 'collected_at', e.target.value)} className="h-7 w-36 bg-secondary border-border text-xs" />
+                    </TableCell>
+                    <TableCell>
+                      <Input type="date" value={order.return_received_at || ''} onChange={e => updateOrderDate(order.id, 'return_received_at', e.target.value)} className="h-7 w-36 bg-secondary border-border text-xs" />
+                    </TableCell>
                     <TableCell className="hidden md:table-cell text-xs">
                       <div className="font-medium">{order.closed_by ? (couriers[order.closed_by] || '—') : '—'}</div>
                       {order.closed_at && <div className="text-muted-foreground">{new Date(order.closed_at).toLocaleString('ar-EG')}</div>}
