@@ -697,6 +697,8 @@ export default function OfficeAccounts() {
                      <TableHead className="text-right">الحالة</TableHead>
                      <TableHead className="text-right">ارتجاع للراسل</TableHead>
                      <TableHead className="text-right">المندوب</TableHead>
+                     <TableHead className="text-right">تاريخ التحصيل</TableHead>
+                     <TableHead className="text-right">رجوع المرتجع</TableHead>
                      <TableHead className="text-right hidden sm:table-cell">التاريخ</TableHead>
                      <TableHead className="text-right hidden md:table-cell">آخر تعديل / قفل</TableHead>
                      <TableHead className="text-right">خالص</TableHead>
