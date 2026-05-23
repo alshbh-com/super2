@@ -26,10 +26,10 @@ export default function Login() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4 relative overflow-hidden">
-      {/* Decorative neon orbs */}
-      <div className="absolute top-[-15%] right-[-10%] w-[520px] h-[520px] rounded-full bg-secondary/25 blur-[130px] animate-orb" />
-      <div className="absolute bottom-[-15%] left-[-10%] w-[460px] h-[460px] rounded-full bg-primary/25 blur-[120px] animate-orb" style={{ animationDelay: '2s' }} />
+    <div className="flex min-h-screen items-center justify-center p-4 relative overflow-hidden"
+         style={{ backgroundImage: `url(${appBg})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+      {/* Subtle overlay for readability */}
+      <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px]" />
 
       <Card className="w-full max-w-sm glass-effect border-primary/30 shadow-glow relative z-10 scanline overflow-hidden">
         <div className="h-1 w-full gradient-neon" />
