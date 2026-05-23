@@ -254,29 +254,12 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>اسم العميل *</Label>
-              <AutocompleteInput
-                value={form.customer_name}
-                onChange={v => set('customer_name', v)}
-                onPick={onPickName}
-                suggestions={sugg.customer_name}
-                className="bg-secondary border-border"
-                required
-                placeholder="اسم العميل"
-              />
+              <Label>تاريخ الاستلام</Label>
+              <Input type="date" value={form.received_at} onChange={e => set('received_at', e.target.value)} className="bg-secondary border-border" />
             </div>
             <div className="space-y-2">
-              <Label>رقم الهاتف *</Label>
-              <AutocompleteInput
-                value={form.customer_phone}
-                onChange={v => set('customer_phone', v)}
-                onPick={onPickPhone}
-                suggestions={sugg.customer_phone}
-                className="bg-secondary border-border"
-                required
-                placeholder="01xxxxxxxxx"
-                dir="ltr"
-              />
+              <Label>اسم الراسل</Label>
+              <Input value={form.sender_name} onChange={e => set('sender_name', e.target.value)} className="bg-secondary border-border" placeholder="اسم الراسل" />
             </div>
           </div>
 
@@ -305,6 +288,45 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
             </div>
           </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>اسم العميل *</Label>
+              <AutocompleteInput
+                value={form.customer_name}
+                onChange={v => set('customer_name', v)}
+                onPick={onPickName}
+                suggestions={sugg.customer_name}
+                className="bg-secondary border-border"
+                required
+                placeholder="اسم العميل"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>هاتف 1 *</Label>
+              <AutocompleteInput
+                value={form.customer_phone}
+                onChange={v => set('customer_phone', v)}
+                onPick={onPickPhone}
+                suggestions={sugg.customer_phone}
+                className="bg-secondary border-border"
+                required
+                placeholder="01xxxxxxxxx"
+                dir="ltr"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>هاتف 2 (اختياري)</Label>
+              <Input value={form.customer_phone_2} onChange={e => set('customer_phone_2', e.target.value)} className="bg-secondary border-border" placeholder="01xxxxxxxxx" dir="ltr" />
+            </div>
+            <div className="space-y-2">
+              <Label>المحافظة</Label>
+              <Input value={form.governorate} onChange={e => set('governorate', e.target.value)} className="bg-secondary border-border" placeholder="المحافظة" />
+            </div>
+          </div>
+
           <div className="space-y-2">
             <Label>العنوان</Label>
             <AutocompleteInput
@@ -315,6 +337,7 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
               placeholder="العنوان بالتفصيل"
             />
           </div>
+
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
