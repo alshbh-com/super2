@@ -27,11 +27,13 @@ export default function UsersPage() {
   const [newRole, setNewRole] = useState('');
   const [newOfficeId, setNewOfficeId] = useState('');
   const [newCommission, setNewCommission] = useState('');
+  const [newShippingComp, setNewShippingComp] = useState('');
   const [creating, setCreating] = useState(false);
 
   // Edit commission per courier
   const [commissionEdit, setCommissionEdit] = useState<Record<string, string>>({});
   const [rejectionEdit, setRejectionEdit] = useState<Record<string, string>>({});
+  const [shippingCompEdit, setShippingCompEdit] = useState<Record<string, string>>({});
 
   // Edit password
   const [pwDialog, setPwDialog] = useState<any>(null);
