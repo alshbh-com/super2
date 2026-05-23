@@ -87,6 +87,14 @@ export default function OfficeAccounts() {
     toast.success(settled ? 'تم تحديد كخالص' : 'تم إلغاء التحديد');
   };
 
+  const updateOrderDate = async (orderId: string, field: 'collected_at' | 'return_received_at', value: string) => {
+    const v = value || null;
+    const { error } = await supabase.from('orders').update({ [field]: v } as any).eq('id', orderId);
+    if (error) { toast.error('فشل الحفظ'); return; }
+    setOfficeOrders(prev => prev.map(o => o.id === orderId ? { ...o, [field]: v } : o));
+    toast.success('تم الحفظ');
+  };
+
   const toggleReturnedToSender = async (orderId: string, returned: boolean) => {
     const { error } = await supabase.from('orders').update({ returned_to_sender: returned } as any).eq('id', orderId);
     if (error) { toast.error('فشل التحديث'); return; }
