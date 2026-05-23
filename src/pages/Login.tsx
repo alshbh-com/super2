@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Lock, Loader2 } from 'lucide-react';
-import logo from '@/assets/logo.jpg';
+import logo from '@/assets/logo-transparent.png';
+import appBg from '@/assets/app-bg.jpg';
 
 export default function Login() {
   const [password, setPassword] = useState('');
@@ -25,22 +26,22 @@ export default function Login() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4 relative overflow-hidden">
-      {/* Decorative neon orbs */}
-      <div className="absolute top-[-15%] right-[-10%] w-[520px] h-[520px] rounded-full bg-secondary/25 blur-[130px] animate-orb" />
-      <div className="absolute bottom-[-15%] left-[-10%] w-[460px] h-[460px] rounded-full bg-primary/25 blur-[120px] animate-orb" style={{ animationDelay: '2s' }} />
+    <div className="flex min-h-screen items-center justify-center p-4 relative overflow-hidden"
+         style={{ backgroundImage: `url(${appBg})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+      {/* Subtle overlay for readability */}
+      <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px]" />
 
       <Card className="w-full max-w-sm glass-effect border-primary/30 shadow-glow relative z-10 scanline overflow-hidden">
         <div className="h-1 w-full gradient-neon" />
         <CardContent className="pt-8 pb-6 px-6">
           {/* Logo */}
           <div className="text-center mb-8">
-            <div className="relative mx-auto w-24 h-24 mb-4">
-              <div className="absolute inset-0 rounded-2xl gradient-neon blur-2xl opacity-70 animate-neon-pulse" />
+            <div className="relative mx-auto w-28 h-28 mb-4">
+              <div className="absolute inset-1 rounded-full bg-primary/20 blur-xl animate-pulse" />
               <img
                 src={logo}
                 alt="Super shipping services"
-                className="relative h-24 w-24 rounded-2xl object-cover shadow-glow"
+                className="relative h-28 w-28 object-contain drop-shadow-lg"
               />
             </div>
             <h1 className="text-3xl font-display font-extrabold uppercase tracking-[0.15em] text-foreground neon-text">

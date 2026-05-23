@@ -5,6 +5,7 @@ import { AppSidebar } from '@/components/AppSidebar';
 import { SidebarProvider, SidebarTrigger, SidebarInset } from '@/components/ui/sidebar';
 import SectionGuide from '@/components/SectionGuide';
 import { sectionGuides } from '@/lib/sectionGuides';
+import appBg from '@/assets/app-bg.jpg';
 
 function getGuideKey(pathname: string): string | null {
   const clean = pathname.replace(/^\//, '') || 'dashboard';
@@ -34,13 +35,15 @@ export default function AppLayout() {
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full">
-        <AppSidebar />
-        <SidebarInset className="flex-1 min-w-0">
-          <header className="flex h-12 items-center border-b border-border/50 px-4 glass-effect">
-            <SidebarTrigger />
-          </header>
-          <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-x-hidden">
+      <div className="flex min-h-screen w-full relative" style={{ backgroundImage: `url(${appBg})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
+        <div className="absolute inset-0 bg-background/50 backdrop-blur-[1px] pointer-events-none" />
+        <div className="relative z-10 flex w-full">
+          <AppSidebar />
+          <SidebarInset className="flex-1 min-w-1">
+            <header className="flex h-12 items-center border-b border-border/50 px-4 glass-effect">
+              <SidebarTrigger />
+            </header>
+            <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-x-hidden">
             {guide && (
               <SectionGuide
                 title={guide.title}
@@ -53,6 +56,7 @@ export default function AppLayout() {
             <Outlet context={{ canEdit: canEdit(sectionKey) }} />
           </main>
         </SidebarInset>
+        </div>
       </div>
     </SidebarProvider>
   );
