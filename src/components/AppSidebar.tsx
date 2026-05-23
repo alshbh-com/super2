@@ -5,7 +5,7 @@ import {
   TrendingUp, Calendar, UserCheck, MessageSquare, Locate, FileSpreadsheet,
   CircleDot, Calculator, Contact, ClipboardList, Trash2, FileBarChart, Navigation2, BookOpen, Receipt, Lock, ScanLine
 } from 'lucide-react';
-import logo from '@/assets/logo-transparent.png';
+import logo from '@/assets/logo.jpg';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions, urlToSectionKey } from '@/hooks/usePermissions';

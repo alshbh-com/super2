@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Lock, Loader2 } from 'lucide-react';
-import logo from '@/assets/logo-transparent.png';
+import logo from '@/assets/logo.jpg';
 import appBg from '@/assets/app-bg.jpg';
 
 export default function Login() {
