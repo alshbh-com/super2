@@ -380,7 +380,7 @@ export default function OfficeAccounts() {
       th { background: #f0f0f0; font-weight: bold; }
       .total-row { background: #e8f4e8; font-weight: bold; }
     </style></head><body>
-    <div class="header">The Pilito - حسابات ${officeName}</div>
+    <div class="header">Super shipping services - حسابات ${officeName}</div>
     <div class="sub-header">${format(new Date(), 'dd/MM/yyyy')} | ${scopeLabel}</div>
     
     <table>

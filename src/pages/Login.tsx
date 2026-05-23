@@ -39,12 +39,12 @@ export default function Login() {
               <div className="absolute inset-0 rounded-2xl gradient-neon blur-2xl opacity-70 animate-neon-pulse" />
               <img
                 src={logo}
-                alt="The Pilito"
+                alt="Super shipping services"
                 className="relative h-24 w-24 rounded-2xl object-cover shadow-glow"
               />
             </div>
             <h1 className="text-3xl font-display font-extrabold uppercase tracking-[0.15em] text-foreground neon-text">
-              The Pilito
+              Super shipping services
             </h1>
             <p className="text-[10px] font-mono-neon tracking-[0.3em] text-primary/80 mt-2 uppercase">
               // secured channel · v2.0
