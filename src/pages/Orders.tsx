@@ -66,7 +66,13 @@ export default function Orders() {
       o.customer_phone?.includes(search) || o.barcode?.includes(search) || o.customer_code?.includes(search) ||
       o.address?.includes(search);
     const matchOffice = filterOffice === 'all' || o.office_id === filterOffice;
-    return matchSearch && matchOffice;
+    const matchCourier = filterCourier === 'all'
+      ? true
+      : filterCourier === 'none'
+        ? !o.courier_id
+        : o.courier_id === filterCourier;
+    const matchReceiveDate = !filterReceiveDate || o.courier_received_at === filterReceiveDate;
+    return matchSearch && matchOffice && matchCourier && matchReceiveDate;
   });
 
   const toggleSelect = (id: string) => {
