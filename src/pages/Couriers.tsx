@@ -21,6 +21,7 @@ export default function Couriers() {
   const [couriers, setCouriers] = useState<any[]>([]);
   const [selectedCourier, setSelectedCourier] = useState<string>('');
   const [courierOrders, setCourierOrders] = useState<any[]>([]);
+  const [filterReceiveDate, setFilterReceiveDate] = useState('');
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
   const [notesDialog, setNotesDialog] = useState<any | null>(null);
   const [notes, setNotes] = useState<any[]>([]);
