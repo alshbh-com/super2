@@ -74,7 +74,7 @@ export default function OfficeAccounts() {
   const loadOfficeOrders = async () => {
     const { data } = await supabase
       .from('orders')
-      .select('id, barcode, status_id, partial_amount, price, delivery_price, is_settled, customer_code, customer_name, customer_phone, courier_id, office_id, created_at, returned_to_sender, returned_to_sender_at, returned_to_sender_by, last_modified_by, closed_by, closed_at')
+      .select('id, barcode, status_id, partial_amount, price, delivery_price, is_settled, customer_code, customer_name, customer_phone, courier_id, office_id, created_at, returned_to_sender, returned_to_sender_at, returned_to_sender_by, last_modified_by, closed_by, closed_at, collected_at, return_received_at')
       .eq('office_id', selectedOffice)
       .eq('is_closed', false)
       .order('created_at', { ascending: false });
