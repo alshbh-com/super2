@@ -129,6 +129,7 @@ export type Database = {
       }
       companies: {
         Row: {
+          agreement_price: number | null
           created_at: string
           id: string
           name: string
@@ -137,6 +138,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          agreement_price?: number | null
           created_at?: string
           id?: string
           name: string
@@ -145,6 +147,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          agreement_price?: number | null
           created_at?: string
           id?: string
           name?: string
@@ -765,6 +768,7 @@ export type Database = {
           barcode: string | null
           closed_at: string | null
           color: string | null
+          company_id: string | null
           courier_id: string | null
           created_at: string
           customer_code: string | null
@@ -797,6 +801,7 @@ export type Database = {
           barcode?: string | null
           closed_at?: string | null
           color?: string | null
+          company_id?: string | null
           courier_id?: string | null
           created_at?: string
           customer_code?: string | null
@@ -829,6 +834,7 @@ export type Database = {
           barcode?: string | null
           closed_at?: string | null
           color?: string | null
+          company_id?: string | null
           courier_id?: string | null
           created_at?: string
           customer_code?: string | null
@@ -857,6 +863,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "orders_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "orders_office_id_fkey"
             columns: ["office_id"]
@@ -1090,6 +1103,10 @@ export type Database = {
         Returns: boolean
       }
       is_admin_or_owner: { Args: { _user_id: string }; Returns: boolean }
+      log_activity: {
+        Args: { _action: string; _details?: Json }
+        Returns: string
+      }
     }
     Enums: {
       app_role: "owner" | "admin" | "courier" | "office" | "accountant"
