@@ -138,12 +138,14 @@ export default function ClosedOrders() {
                    <TableHead className="text-right hidden md:table-cell">المكتب</TableHead>
                    <TableHead className="text-right hidden sm:table-cell">المندوب</TableHead>
                    <TableHead className="text-right">الحالة</TableHead>
+                   <TableHead className="text-right">تاريخ التحصيل</TableHead>
+                   <TableHead className="text-right">تاريخ رجوع المرتجع</TableHead>
                    <TableHead className="text-right hidden md:table-cell">تم القفل بواسطة</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 ? (
-                  <TableRow><TableCell colSpan={isOwner ? 11 : 10} className="text-center text-muted-foreground py-8">لا توجد أوردرات مقفلة</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={isOwner ? 13 : 12} className="text-center text-muted-foreground py-8">لا توجد أوردرات مقفلة</TableCell></TableRow>
                 ) : filtered.map(order => (
                   <TableRow key={order.id} className="border-border">
                     {isOwner && <TableCell><Checkbox checked={selected.has(order.id)} onCheckedChange={() => toggleSelect(order.id)} /></TableCell>}
