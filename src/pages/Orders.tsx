@@ -25,6 +25,9 @@ export default function Orders() {
   const [courierMap, setCourierMap] = useState<Record<string, string>>({});
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [assignCourier, setAssignCourier] = useState('');
+  const [assignDate, setAssignDate] = useState(new Date().toISOString().split('T')[0]);
+  const [filterCourier, setFilterCourier] = useState('all');
+  const [filterReceiveDate, setFilterReceiveDate] = useState('');
   const [statuses, setStatuses] = useState<any[]>([]);
   const [editOrder, setEditOrder] = useState<any>(null);
 
