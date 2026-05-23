@@ -56,6 +56,7 @@ export default function AppLayout() {
             <Outlet context={{ canEdit: canEdit(sectionKey) }} />
           </main>
         </SidebarInset>
+        </div>
       </div>
     </SidebarProvider>
   );
