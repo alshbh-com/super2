@@ -161,6 +161,20 @@ export default function Orders() {
             {offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
           </SelectContent>
         </Select>
+        <Select value={filterCourier} onValueChange={setFilterCourier}>
+          <SelectTrigger className="w-32 sm:w-40 bg-secondary border-border"><SelectValue placeholder="المندوب" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">كل المندوبين</SelectItem>
+            <SelectItem value="none">غير معين</SelectItem>
+            {couriers.map(c => <SelectItem key={c.id} value={c.id}>{c.full_name}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        {filterCourier !== 'all' && filterCourier !== 'none' && (
+          <div className="flex items-center gap-1">
+            <Input type="date" value={filterReceiveDate} onChange={e => setFilterReceiveDate(e.target.value)} className="w-40 bg-secondary border-border" placeholder="تاريخ الاستلام" />
+            {filterReceiveDate && <Button size="sm" variant="ghost" onClick={() => setFilterReceiveDate('')}>×</Button>}
+          </div>
+        )}
       </div>
 
       {selected.size > 0 && (
@@ -170,6 +184,10 @@ export default function Orders() {
             <SelectTrigger className="w-36 bg-card border-border"><SelectValue placeholder="اختر مندوب" /></SelectTrigger>
             <SelectContent>{couriers.map(c => <SelectItem key={c.id} value={c.id}>{c.full_name}</SelectItem>)}</SelectContent>
           </Select>
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[10px] text-muted-foreground">تاريخ استلام المندوب</span>
+            <Input type="date" value={assignDate} onChange={e => setAssignDate(e.target.value)} className="w-40 h-8 bg-card border-border" />
+          </div>
           <Button size="sm" onClick={assignToCourier} disabled={!assignCourier}><UserPlus className="h-4 w-4 ml-1" />تعيين</Button>
           <Button size="sm" variant="outline" onClick={unassignCourier}><UserMinus className="h-4 w-4 ml-1" />إلغاء التعيين</Button>
           <Button size="sm" variant="secondary" onClick={closeSelected}><Lock className="h-4 w-4 ml-1" />تقفيل</Button>
