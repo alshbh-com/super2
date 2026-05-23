@@ -370,6 +370,20 @@ export default function UsersPage() {
                         <div className="flex gap-1 items-center">
                           <Input
                             type="number"
+                            value={shippingCompEdit[u.id] !== undefined ? shippingCompEdit[u.id] : (u.shipping_compensation ?? 0)}
+                            onChange={e => setShippingCompEdit(prev => ({ ...prev, [u.id]: e.target.value }))}
+                            onBlur={() => shippingCompEdit[u.id] !== undefined && saveShippingComp(u.id)}
+                            className="h-7 w-20 bg-secondary border-border text-xs"
+                          />
+                          <span className="text-xs text-muted-foreground">ج.م</span>
+                        </div>
+                      ) : <span className="text-xs text-muted-foreground">-</span>}
+                    </TableCell>
+                    <TableCell>
+                      {u.role === 'courier' ? (
+                        <div className="flex gap-1 items-center">
+                          <Input
+                            type="number"
                             value={rejectionEdit[u.id] !== undefined ? rejectionEdit[u.id] : (u.rejection_commission ?? 0)}
                             onChange={e => setRejectionEdit(prev => ({ ...prev, [u.id]: e.target.value }))}
                             onBlur={() => rejectionEdit[u.id] !== undefined && saveRejection(u.id)}
