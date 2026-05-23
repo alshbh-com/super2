@@ -164,7 +164,7 @@ export default function Couriers() {
                 <Table>
                   <TableHeader>
                     <TableRow className="border-border">
-                      <TableHead className="w-10"><Checkbox checked={courierOrders.length > 0 && selectedOrders.size === courierOrders.length} onCheckedChange={toggleAll} /></TableHead>
+                      <TableHead className="w-10"><Checkbox checked={visibleOrders.length > 0 && selectedOrders.size === visibleOrders.length} onCheckedChange={toggleAll} /></TableHead>
                       <TableHead className="text-right">Tracking</TableHead>
                       <TableHead className="text-right">الكود</TableHead>
                       <TableHead className="text-right">العميل</TableHead>
@@ -175,9 +175,9 @@ export default function Couriers() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {courierOrders.length === 0 ? (
+                    {visibleOrders.length === 0 ? (
                       <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
-                    ) : courierOrders.map(order => (
+                    ) : visibleOrders.map(order => (
                       <TableRow key={order.id} className="border-border">
                         <TableCell><Checkbox checked={selectedOrders.has(order.id)} onCheckedChange={() => toggleSelect(order.id)} /></TableCell>
                         <TableCell className="font-mono text-xs">{order.tracking_id}</TableCell>
