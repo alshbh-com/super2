@@ -5,6 +5,7 @@ import { AppSidebar } from '@/components/AppSidebar';
 import { SidebarProvider, SidebarTrigger, SidebarInset } from '@/components/ui/sidebar';
 import SectionGuide from '@/components/SectionGuide';
 import { sectionGuides } from '@/lib/sectionGuides';
+import appBg from '@/assets/app-bg.jpg';
 
 function getGuideKey(pathname: string): string | null {
   const clean = pathname.replace(/^\//, '') || 'dashboard';
