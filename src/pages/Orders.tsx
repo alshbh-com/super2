@@ -80,12 +80,12 @@ export default function Orders() {
   const assignToCourier = async () => {
     if (!assignCourier || selected.size === 0) { toast.error('اختر مندوب واوردرات'); return; }
     const courierStatus = statuses.find(s => s.name === 'قيد التوصيل');
-    const updateData: any = { courier_id: assignCourier, is_courier_closed: false };
+    const updateData: any = { courier_id: assignCourier, is_courier_closed: false, courier_received_at: assignDate || null };
     if (courierStatus) updateData.status_id = courierStatus.id;
     
     const { error } = await supabase.from('orders').update(updateData).in('id', Array.from(selected));
     if (error) { toast.error(error.message); return; }
-    logActivity('تعيين أوردرات لمندوب', { count: selected.size, courier_id: assignCourier });
+    logActivity('تعيين أوردرات لمندوب', { count: selected.size, courier_id: assignCourier, date: assignDate });
     toast.success(`تم تعيين ${selected.size} أوردر للمندوب`);
     setSelected(new Set()); setAssignCourier('');
     loadOrders();
