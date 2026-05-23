@@ -335,9 +335,9 @@ export default function UsersPage() {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={isOwner && showPasswords ? 9 : 8} className="text-center text-muted-foreground py-8">جارٍ التحميل...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={isOwner && showPasswords ? 10 : 9} className="text-center text-muted-foreground py-8">جارٍ التحميل...</TableCell></TableRow>
                 ) : users.length === 0 ? (
-                  <TableRow><TableCell colSpan={isOwner && showPasswords ? 9 : 8} className="text-center text-muted-foreground py-8">لا يوجد مستخدمين</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={isOwner && showPasswords ? 10 : 9} className="text-center text-muted-foreground py-8">لا يوجد مستخدمين</TableCell></TableRow>
                 ) : users.map(u => (
                   <TableRow key={u.id} className="border-border">
                     <TableCell className="font-medium">{u.full_name}</TableCell>
