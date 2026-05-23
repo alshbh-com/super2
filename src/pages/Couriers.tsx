@@ -54,12 +54,14 @@ export default function Couriers() {
     setSelectedOrders(new Set());
   };
 
+  const visibleOrders = courierOrders.filter(o => !filterReceiveDate || o.courier_received_at === filterReceiveDate);
+
   const toggleSelect = (id: string) => {
     setSelectedOrders(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
   };
   const toggleAll = () => {
-    if (selectedOrders.size === courierOrders.length) setSelectedOrders(new Set());
-    else setSelectedOrders(new Set(courierOrders.map(o => o.id)));
+    if (selectedOrders.size === visibleOrders.length) setSelectedOrders(new Set());
+    else setSelectedOrders(new Set(visibleOrders.map(o => o.id)));
   };
   const closeSelected = async () => {
     if (selectedOrders.size === 0) return;
