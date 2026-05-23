@@ -36,12 +36,12 @@ export default function Login() {
         <CardContent className="pt-8 pb-6 px-6">
           {/* Logo */}
           <div className="text-center mb-8">
-            <div className="relative mx-auto w-24 h-24 mb-4">
-              <div className="absolute inset-0 rounded-2xl gradient-neon blur-2xl opacity-70 animate-neon-pulse" />
+            <div className="relative mx-auto w-28 h-28 mb-4">
+              <div className="absolute inset-1 rounded-full bg-primary/20 blur-xl animate-pulse" />
               <img
                 src={logo}
                 alt="Super shipping services"
-                className="relative h-24 w-24 rounded-2xl object-cover shadow-glow"
+                className="relative h-28 w-28 object-contain drop-shadow-lg"
               />
             </div>
             <h1 className="text-3xl font-display font-extrabold uppercase tracking-[0.15em] text-foreground neon-text">
