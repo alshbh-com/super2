@@ -294,10 +294,16 @@ export default function UsersPage() {
                   </div>
                 )}
                 {newRole === 'courier' && (
-                  <div>
-                    <Label>عمولة الأوردر الثابتة (ج.م)</Label>
-                    <Input type="number" value={newCommission} onChange={e => setNewCommission(e.target.value)} className="bg-secondary border-border" placeholder="مثال: 30" dir="ltr" />
-                    <p className="text-xs text-muted-foreground mt-1">تُحسب أوتوماتيك على كل أوردر مُسلَّم/جزئي/رفض ودفع شحن.</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label>عمولة الأوردر (ج.م)</Label>
+                      <Input type="number" value={newCommission} onChange={e => setNewCommission(e.target.value)} className="bg-secondary border-border" placeholder="30" dir="ltr" />
+                    </div>
+                    <div>
+                      <Label>تعويض الشحن (ج.م)</Label>
+                      <Input type="number" value={newShippingComp} onChange={e => setNewShippingComp(e.target.value)} className="bg-secondary border-border" placeholder="0" dir="ltr" />
+                      <p className="text-[10px] text-muted-foreground mt-1">يُحسب بدل سعر التوصيل إن وُجد.</p>
+                    </div>
                   </div>
                 )}
                 <Button onClick={createUser} className="w-full" disabled={creating}>
