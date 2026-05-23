@@ -21,6 +21,7 @@ export default function Couriers() {
   const [couriers, setCouriers] = useState<any[]>([]);
   const [selectedCourier, setSelectedCourier] = useState<string>('');
   const [courierOrders, setCourierOrders] = useState<any[]>([]);
+  const [filterReceiveDate, setFilterReceiveDate] = useState('');
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
   const [notesDialog, setNotesDialog] = useState<any | null>(null);
   const [notes, setNotes] = useState<any[]>([]);
@@ -53,12 +54,14 @@ export default function Couriers() {
     setSelectedOrders(new Set());
   };
 
+  const visibleOrders = courierOrders.filter(o => !filterReceiveDate || o.courier_received_at === filterReceiveDate);
+
   const toggleSelect = (id: string) => {
     setSelectedOrders(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
   };
   const toggleAll = () => {
-    if (selectedOrders.size === courierOrders.length) setSelectedOrders(new Set());
-    else setSelectedOrders(new Set(courierOrders.map(o => o.id)));
+    if (selectedOrders.size === visibleOrders.length) setSelectedOrders(new Set());
+    else setSelectedOrders(new Set(visibleOrders.map(o => o.id)));
   };
   const closeSelected = async () => {
     if (selectedOrders.size === 0) return;
@@ -142,13 +145,18 @@ export default function Couriers() {
 
       {selectedCourier && (
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <h2 className="text-lg font-semibold">أوردرات المندوب</h2>
-            {selectedOrders.size > 0 && (
-              <Button size="sm" variant="destructive" onClick={closeSelected}>
-                <Lock className="h-4 w-4 ml-1" />تقفيل {selectedOrders.size} أوردر
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              <Label className="text-xs">تاريخ الاستلام:</Label>
+              <Input type="date" value={filterReceiveDate} onChange={e => setFilterReceiveDate(e.target.value)} className="h-8 w-40 bg-secondary border-border" />
+              {filterReceiveDate && <Button size="sm" variant="ghost" onClick={() => setFilterReceiveDate('')}>مسح</Button>}
+              {selectedOrders.size > 0 && (
+                <Button size="sm" variant="destructive" onClick={closeSelected}>
+                  <Lock className="h-4 w-4 ml-1" />تقفيل {selectedOrders.size} أوردر
+                </Button>
+              )}
+            </div>
           </div>
           <Card className="bg-card border-border">
             <CardContent className="p-0">
@@ -156,7 +164,7 @@ export default function Couriers() {
                 <Table>
                   <TableHeader>
                     <TableRow className="border-border">
-                      <TableHead className="w-10"><Checkbox checked={courierOrders.length > 0 && selectedOrders.size === courierOrders.length} onCheckedChange={toggleAll} /></TableHead>
+                      <TableHead className="w-10"><Checkbox checked={visibleOrders.length > 0 && selectedOrders.size === visibleOrders.length} onCheckedChange={toggleAll} /></TableHead>
                       <TableHead className="text-right">Tracking</TableHead>
                       <TableHead className="text-right">الكود</TableHead>
                       <TableHead className="text-right">العميل</TableHead>
@@ -167,9 +175,9 @@ export default function Couriers() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {courierOrders.length === 0 ? (
+                    {visibleOrders.length === 0 ? (
                       <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
-                    ) : courierOrders.map(order => (
+                    ) : visibleOrders.map(order => (
                       <TableRow key={order.id} className="border-border">
                         <TableCell><Checkbox checked={selectedOrders.has(order.id)} onCheckedChange={() => toggleSelect(order.id)} /></TableCell>
                         <TableCell className="font-mono text-xs">{order.tracking_id}</TableCell>

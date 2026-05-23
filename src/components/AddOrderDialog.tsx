@@ -31,19 +31,24 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
   const [history, setHistory] = useState<any[]>([]);
 
   const emptyForm = {
-    customer_name: '', customer_phone: '', customer_code: '',
+    received_at: new Date().toISOString().split('T')[0],
+    sender_name: '',
+    customer_name: '', customer_phone: '', customer_phone_2: '', customer_code: '',
     product_name: '', product_id: '',
     quantity: '', price: '', delivery_price: '',
     office_id: '', status_id: '',
-    color: '', size: '', address: '', notes: '',
+    color: '', size: '', governorate: '', address: '', notes: '',
     priority: 'normal',
   };
 
   const [form, setForm] = useState(emptyForm);
 
   const mapOrderToForm = (order: any) => ({
+    received_at: order?.received_at || new Date().toISOString().split('T')[0],
+    sender_name: order?.sender_name || '',
     customer_name: order?.customer_name || '',
     customer_phone: order?.customer_phone || '',
+    customer_phone_2: order?.customer_phone_2 || '',
     customer_code: order?.customer_code || '',
     product_name: order?.product_name || '',
     product_id: order?.product_id || '',
@@ -54,6 +59,7 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
     status_id: order?.status_id || '',
     color: order?.color || '',
     size: order?.size || '',
+    governorate: order?.governorate || '',
     address: order?.address || '',
     notes: order?.notes || '',
     priority: order?.priority || 'normal',
@@ -187,12 +193,16 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
       const deliveryPrice = parseFloat(form.delivery_price) || 0;
 
       const orderData: any = {
+        received_at: form.received_at || null,
+        sender_name: form.sender_name || null,
         customer_name: form.customer_name,
         customer_phone: form.customer_phone,
+        customer_phone_2: form.customer_phone_2 || null,
         customer_code: form.customer_code || null,
         product_name: form.product_name || 'بدون منتج',
         quantity: qty, price, delivery_price: deliveryPrice,
         color: form.color, size: form.size,
+        governorate: form.governorate || null,
         address: form.address,
         notes: form.notes || '',
         priority: form.priority || 'normal',
@@ -244,29 +254,12 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>اسم العميل *</Label>
-              <AutocompleteInput
-                value={form.customer_name}
-                onChange={v => set('customer_name', v)}
-                onPick={onPickName}
-                suggestions={sugg.customer_name}
-                className="bg-secondary border-border"
-                required
-                placeholder="اسم العميل"
-              />
+              <Label>تاريخ الاستلام</Label>
+              <Input type="date" value={form.received_at} onChange={e => set('received_at', e.target.value)} className="bg-secondary border-border" />
             </div>
             <div className="space-y-2">
-              <Label>رقم الهاتف *</Label>
-              <AutocompleteInput
-                value={form.customer_phone}
-                onChange={v => set('customer_phone', v)}
-                onPick={onPickPhone}
-                suggestions={sugg.customer_phone}
-                className="bg-secondary border-border"
-                required
-                placeholder="01xxxxxxxxx"
-                dir="ltr"
-              />
+              <Label>اسم الراسل</Label>
+              <Input value={form.sender_name} onChange={e => set('sender_name', e.target.value)} className="bg-secondary border-border" placeholder="اسم الراسل" />
             </div>
           </div>
 
@@ -295,6 +288,45 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
             </div>
           </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>اسم العميل *</Label>
+              <AutocompleteInput
+                value={form.customer_name}
+                onChange={v => set('customer_name', v)}
+                onPick={onPickName}
+                suggestions={sugg.customer_name}
+                className="bg-secondary border-border"
+                required
+                placeholder="اسم العميل"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>هاتف 1 *</Label>
+              <AutocompleteInput
+                value={form.customer_phone}
+                onChange={v => set('customer_phone', v)}
+                onPick={onPickPhone}
+                suggestions={sugg.customer_phone}
+                className="bg-secondary border-border"
+                required
+                placeholder="01xxxxxxxxx"
+                dir="ltr"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>هاتف 2 (اختياري)</Label>
+              <Input value={form.customer_phone_2} onChange={e => set('customer_phone_2', e.target.value)} className="bg-secondary border-border" placeholder="01xxxxxxxxx" dir="ltr" />
+            </div>
+            <div className="space-y-2">
+              <Label>المحافظة</Label>
+              <Input value={form.governorate} onChange={e => set('governorate', e.target.value)} className="bg-secondary border-border" placeholder="المحافظة" />
+            </div>
+          </div>
+
           <div className="space-y-2">
             <Label>العنوان</Label>
             <AutocompleteInput
@@ -305,6 +337,7 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
               placeholder="العنوان بالتفصيل"
             />
           </div>
+
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">

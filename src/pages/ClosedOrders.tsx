@@ -89,6 +89,13 @@ export default function ClosedOrders() {
     loadOrders();
   };
 
+  const updateOrderDate = async (orderId: string, field: 'collected_at' | 'return_received_at', value: string) => {
+    const { error } = await supabase.from('orders').update({ [field]: value || null } as any).eq('id', orderId);
+    if (error) { toast.error('فشل الحفظ'); return; }
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, [field]: value || null } : o));
+    toast.success('تم الحفظ');
+  };
+
   return (
     <div className="space-y-4">
       <h1 className="text-xl sm:text-2xl font-bold">الأوردرات القديمة (المقفلة)</h1>
@@ -131,12 +138,14 @@ export default function ClosedOrders() {
                    <TableHead className="text-right hidden md:table-cell">المكتب</TableHead>
                    <TableHead className="text-right hidden sm:table-cell">المندوب</TableHead>
                    <TableHead className="text-right">الحالة</TableHead>
+                   <TableHead className="text-right">تاريخ التحصيل</TableHead>
+                   <TableHead className="text-right">تاريخ رجوع المرتجع</TableHead>
                    <TableHead className="text-right hidden md:table-cell">تم القفل بواسطة</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 ? (
-                  <TableRow><TableCell colSpan={isOwner ? 11 : 10} className="text-center text-muted-foreground py-8">لا توجد أوردرات مقفلة</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={isOwner ? 13 : 12} className="text-center text-muted-foreground py-8">لا توجد أوردرات مقفلة</TableCell></TableRow>
                 ) : filtered.map(order => (
                   <TableRow key={order.id} className="border-border">
                     {isOwner && <TableCell><Checkbox checked={selected.has(order.id)} onCheckedChange={() => toggleSelect(order.id)} /></TableCell>}
@@ -152,6 +161,12 @@ export default function ClosedOrders() {
                       <Badge style={{ backgroundColor: order.order_statuses?.color || undefined }} className="text-xs">
                         {order.order_statuses?.name || '-'}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Input type="date" value={order.collected_at || ''} onChange={e => updateOrderDate(order.id, 'collected_at', e.target.value)} className="h-7 w-36 bg-secondary border-border text-xs" />
+                    </TableCell>
+                    <TableCell>
+                      <Input type="date" value={order.return_received_at || ''} onChange={e => updateOrderDate(order.id, 'return_received_at', e.target.value)} className="h-7 w-36 bg-secondary border-border text-xs" />
                     </TableCell>
                     <TableCell className="hidden md:table-cell text-xs">
                       <div className="font-medium">{order.closed_by ? (couriers[order.closed_by] || '—') : '—'}</div>

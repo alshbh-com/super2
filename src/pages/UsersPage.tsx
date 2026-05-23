@@ -27,11 +27,13 @@ export default function UsersPage() {
   const [newRole, setNewRole] = useState('');
   const [newOfficeId, setNewOfficeId] = useState('');
   const [newCommission, setNewCommission] = useState('');
+  const [newShippingComp, setNewShippingComp] = useState('');
   const [creating, setCreating] = useState(false);
 
   // Edit commission per courier
   const [commissionEdit, setCommissionEdit] = useState<Record<string, string>>({});
   const [rejectionEdit, setRejectionEdit] = useState<Record<string, string>>({});
+  const [shippingCompEdit, setShippingCompEdit] = useState<Record<string, string>>({});
 
   // Edit password
   const [pwDialog, setPwDialog] = useState<any>(null);
@@ -107,12 +109,17 @@ export default function UsersPage() {
         office_id: newRole === 'office' ? newOfficeId : undefined,
       });
       // Save commission for couriers (uses profiles.commission_amount)
-      if (newRole === 'courier' && newCommission && result?.user?.id) {
-        await supabase.from('profiles').update({ commission_amount: Number(newCommission) }).eq('id', result.user.id);
+      if (newRole === 'courier' && result?.user?.id) {
+        const updates: any = {};
+        if (newCommission) updates.commission_amount = Number(newCommission);
+        if (newShippingComp) updates.shipping_compensation = Number(newShippingComp);
+        if (Object.keys(updates).length > 0) {
+          await supabase.from('profiles').update(updates).eq('id', result.user.id);
+        }
       }
       toast.success('تم إنشاء المستخدم بنجاح');
       setCreateOpen(false);
-      setNewName(''); setNewPhone(''); setNewCode(''); setNewRole(''); setNewOfficeId(''); setNewCommission('');
+      setNewName(''); setNewPhone(''); setNewCode(''); setNewRole(''); setNewOfficeId(''); setNewCommission(''); setNewShippingComp('');
       loadUsers();
     } catch (err: any) {
       toast.error(err.message || 'خطأ');
@@ -137,6 +144,16 @@ export default function UsersPage() {
     if (error) { toast.error('فشل الحفظ'); return; }
     toast.success('تم حفظ عمولة الرفض');
     setRejectionEdit(prev => { const n = { ...prev }; delete n[userId]; return n; });
+    loadUsers();
+  };
+
+  const saveShippingComp = async (userId: string) => {
+    const v = shippingCompEdit[userId];
+    if (v === undefined) return;
+    const { error } = await supabase.from('profiles').update({ shipping_compensation: Number(v) || 0 } as any).eq('id', userId);
+    if (error) { toast.error('فشل الحفظ'); return; }
+    toast.success('تم حفظ تعويض الشحن');
+    setShippingCompEdit(prev => { const n = { ...prev }; delete n[userId]; return n; });
     loadUsers();
   };
 
@@ -277,10 +294,16 @@ export default function UsersPage() {
                   </div>
                 )}
                 {newRole === 'courier' && (
-                  <div>
-                    <Label>عمولة الأوردر الثابتة (ج.م)</Label>
-                    <Input type="number" value={newCommission} onChange={e => setNewCommission(e.target.value)} className="bg-secondary border-border" placeholder="مثال: 30" dir="ltr" />
-                    <p className="text-xs text-muted-foreground mt-1">تُحسب أوتوماتيك على كل أوردر مُسلَّم/جزئي/رفض ودفع شحن.</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label>عمولة الأوردر (ج.م)</Label>
+                      <Input type="number" value={newCommission} onChange={e => setNewCommission(e.target.value)} className="bg-secondary border-border" placeholder="30" dir="ltr" />
+                    </div>
+                    <div>
+                      <Label>تعويض الشحن (ج.م)</Label>
+                      <Input type="number" value={newShippingComp} onChange={e => setNewShippingComp(e.target.value)} className="bg-secondary border-border" placeholder="0" dir="ltr" />
+                      <p className="text-[10px] text-muted-foreground mt-1">يُحسب بدل سعر التوصيل إن وُجد.</p>
+                    </div>
                   </div>
                 )}
                 <Button onClick={createUser} className="w-full" disabled={creating}>
@@ -304,6 +327,7 @@ export default function UsersPage() {
                   <TableHead className="text-right">الصلاحية</TableHead>
                   <TableHead className="text-right">المكتب</TableHead>
                   <TableHead className="text-right">عمولة المندوب</TableHead>
+                  <TableHead className="text-right">تعويض الشحن</TableHead>
                   <TableHead className="text-right">عمولة الرفض (لم يدفع شحن)</TableHead>
                   <TableHead className="text-right">الحالة</TableHead>
                   <TableHead className="text-right">إجراءات</TableHead>
@@ -311,9 +335,9 @@ export default function UsersPage() {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={isOwner && showPasswords ? 9 : 8} className="text-center text-muted-foreground py-8">جارٍ التحميل...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={isOwner && showPasswords ? 10 : 9} className="text-center text-muted-foreground py-8">جارٍ التحميل...</TableCell></TableRow>
                 ) : users.length === 0 ? (
-                  <TableRow><TableCell colSpan={isOwner && showPasswords ? 9 : 8} className="text-center text-muted-foreground py-8">لا يوجد مستخدمين</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={isOwner && showPasswords ? 10 : 9} className="text-center text-muted-foreground py-8">لا يوجد مستخدمين</TableCell></TableRow>
                 ) : users.map(u => (
                   <TableRow key={u.id} className="border-border">
                     <TableCell className="font-medium">{u.full_name}</TableCell>
@@ -335,6 +359,20 @@ export default function UsersPage() {
                             value={commissionEdit[u.id] !== undefined ? commissionEdit[u.id] : (u.commission_amount ?? 0)}
                             onChange={e => setCommissionEdit(prev => ({ ...prev, [u.id]: e.target.value }))}
                             onBlur={() => commissionEdit[u.id] !== undefined && saveCommission(u.id)}
+                            className="h-7 w-20 bg-secondary border-border text-xs"
+                          />
+                          <span className="text-xs text-muted-foreground">ج.م</span>
+                        </div>
+                      ) : <span className="text-xs text-muted-foreground">-</span>}
+                    </TableCell>
+                    <TableCell>
+                      {u.role === 'courier' ? (
+                        <div className="flex gap-1 items-center">
+                          <Input
+                            type="number"
+                            value={shippingCompEdit[u.id] !== undefined ? shippingCompEdit[u.id] : (u.shipping_compensation ?? 0)}
+                            onChange={e => setShippingCompEdit(prev => ({ ...prev, [u.id]: e.target.value }))}
+                            onBlur={() => shippingCompEdit[u.id] !== undefined && saveShippingComp(u.id)}
                             className="h-7 w-20 bg-secondary border-border text-xs"
                           />
                           <span className="text-xs text-muted-foreground">ج.م</span>

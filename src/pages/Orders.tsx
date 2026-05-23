@@ -25,6 +25,9 @@ export default function Orders() {
   const [courierMap, setCourierMap] = useState<Record<string, string>>({});
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [assignCourier, setAssignCourier] = useState('');
+  const [assignDate, setAssignDate] = useState(new Date().toISOString().split('T')[0]);
+  const [filterCourier, setFilterCourier] = useState('all');
+  const [filterReceiveDate, setFilterReceiveDate] = useState('');
   const [statuses, setStatuses] = useState<any[]>([]);
   const [editOrder, setEditOrder] = useState<any>(null);
 
@@ -63,7 +66,13 @@ export default function Orders() {
       o.customer_phone?.includes(search) || o.barcode?.includes(search) || o.customer_code?.includes(search) ||
       o.address?.includes(search);
     const matchOffice = filterOffice === 'all' || o.office_id === filterOffice;
-    return matchSearch && matchOffice;
+    const matchCourier = filterCourier === 'all'
+      ? true
+      : filterCourier === 'none'
+        ? !o.courier_id
+        : o.courier_id === filterCourier;
+    const matchReceiveDate = !filterReceiveDate || o.courier_received_at === filterReceiveDate;
+    return matchSearch && matchOffice && matchCourier && matchReceiveDate;
   });
 
   const toggleSelect = (id: string) => {
@@ -77,12 +86,12 @@ export default function Orders() {
   const assignToCourier = async () => {
     if (!assignCourier || selected.size === 0) { toast.error('اختر مندوب واوردرات'); return; }
     const courierStatus = statuses.find(s => s.name === 'قيد التوصيل');
-    const updateData: any = { courier_id: assignCourier, is_courier_closed: false };
+    const updateData: any = { courier_id: assignCourier, is_courier_closed: false, courier_received_at: assignDate || null };
     if (courierStatus) updateData.status_id = courierStatus.id;
     
     const { error } = await supabase.from('orders').update(updateData).in('id', Array.from(selected));
     if (error) { toast.error(error.message); return; }
-    logActivity('تعيين أوردرات لمندوب', { count: selected.size, courier_id: assignCourier });
+    logActivity('تعيين أوردرات لمندوب', { count: selected.size, courier_id: assignCourier, date: assignDate });
     toast.success(`تم تعيين ${selected.size} أوردر للمندوب`);
     setSelected(new Set()); setAssignCourier('');
     loadOrders();
@@ -152,6 +161,20 @@ export default function Orders() {
             {offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
           </SelectContent>
         </Select>
+        <Select value={filterCourier} onValueChange={setFilterCourier}>
+          <SelectTrigger className="w-32 sm:w-40 bg-secondary border-border"><SelectValue placeholder="المندوب" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">كل المندوبين</SelectItem>
+            <SelectItem value="none">غير معين</SelectItem>
+            {couriers.map(c => <SelectItem key={c.id} value={c.id}>{c.full_name}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        {filterCourier !== 'all' && filterCourier !== 'none' && (
+          <div className="flex items-center gap-1">
+            <Input type="date" value={filterReceiveDate} onChange={e => setFilterReceiveDate(e.target.value)} className="w-40 bg-secondary border-border" placeholder="تاريخ الاستلام" />
+            {filterReceiveDate && <Button size="sm" variant="ghost" onClick={() => setFilterReceiveDate('')}>×</Button>}
+          </div>
+        )}
       </div>
 
       {selected.size > 0 && (
@@ -161,6 +184,10 @@ export default function Orders() {
             <SelectTrigger className="w-36 bg-card border-border"><SelectValue placeholder="اختر مندوب" /></SelectTrigger>
             <SelectContent>{couriers.map(c => <SelectItem key={c.id} value={c.id}>{c.full_name}</SelectItem>)}</SelectContent>
           </Select>
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[10px] text-muted-foreground">تاريخ استلام المندوب</span>
+            <Input type="date" value={assignDate} onChange={e => setAssignDate(e.target.value)} className="w-40 h-8 bg-card border-border" />
+          </div>
           <Button size="sm" onClick={assignToCourier} disabled={!assignCourier}><UserPlus className="h-4 w-4 ml-1" />تعيين</Button>
           <Button size="sm" variant="outline" onClick={unassignCourier}><UserMinus className="h-4 w-4 ml-1" />إلغاء التعيين</Button>
           <Button size="sm" variant="secondary" onClick={closeSelected}><Lock className="h-4 w-4 ml-1" />تقفيل</Button>

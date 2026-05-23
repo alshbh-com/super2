@@ -767,13 +767,16 @@ export type Database = {
           address: string | null
           barcode: string | null
           closed_at: string | null
+          collected_at: string | null
           color: string | null
           company_id: string | null
           courier_id: string | null
+          courier_received_at: string | null
           created_at: string
           customer_code: string | null
           customer_name: string | null
           customer_phone: string | null
+          customer_phone_2: string | null
           delivery_price: number | null
           governorate: string | null
           id: string
@@ -788,8 +791,11 @@ export type Database = {
           product_id: string | null
           product_name: string | null
           quantity: number | null
+          received_at: string | null
+          return_received_at: string | null
           returned_to_sender: boolean | null
           returned_to_sender_at: string | null
+          sender_name: string | null
           shipping_paid: number | null
           size: string | null
           status_id: string | null
@@ -800,13 +806,16 @@ export type Database = {
           address?: string | null
           barcode?: string | null
           closed_at?: string | null
+          collected_at?: string | null
           color?: string | null
           company_id?: string | null
           courier_id?: string | null
+          courier_received_at?: string | null
           created_at?: string
           customer_code?: string | null
           customer_name?: string | null
           customer_phone?: string | null
+          customer_phone_2?: string | null
           delivery_price?: number | null
           governorate?: string | null
           id?: string
@@ -821,8 +830,11 @@ export type Database = {
           product_id?: string | null
           product_name?: string | null
           quantity?: number | null
+          received_at?: string | null
+          return_received_at?: string | null
           returned_to_sender?: boolean | null
           returned_to_sender_at?: string | null
+          sender_name?: string | null
           shipping_paid?: number | null
           size?: string | null
           status_id?: string | null
@@ -833,13 +845,16 @@ export type Database = {
           address?: string | null
           barcode?: string | null
           closed_at?: string | null
+          collected_at?: string | null
           color?: string | null
           company_id?: string | null
           courier_id?: string | null
+          courier_received_at?: string | null
           created_at?: string
           customer_code?: string | null
           customer_name?: string | null
           customer_phone?: string | null
+          customer_phone_2?: string | null
           delivery_price?: number | null
           governorate?: string | null
           id?: string
@@ -854,8 +869,11 @@ export type Database = {
           product_id?: string | null
           product_name?: string | null
           quantity?: number | null
+          received_at?: string | null
+          return_received_at?: string | null
           returned_to_sender?: boolean | null
           returned_to_sender_at?: string | null
+          sender_name?: string | null
           shipping_paid?: number | null
           size?: string | null
           status_id?: string | null
@@ -939,6 +957,7 @@ export type Database = {
           phone: string | null
           rejection_commission: number | null
           salary: number | null
+          shipping_compensation: number | null
           updated_at: string
         }
         Insert: {
@@ -956,6 +975,7 @@ export type Database = {
           phone?: string | null
           rejection_commission?: number | null
           salary?: number | null
+          shipping_compensation?: number | null
           updated_at?: string
         }
         Update: {
@@ -973,6 +993,7 @@ export type Database = {
           phone?: string | null
           rejection_commission?: number | null
           salary?: number | null
+          shipping_compensation?: number | null
           updated_at?: string
         }
         Relationships: [
