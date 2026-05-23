@@ -193,12 +193,16 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
       const deliveryPrice = parseFloat(form.delivery_price) || 0;
 
       const orderData: any = {
+        received_at: form.received_at || null,
+        sender_name: form.sender_name || null,
         customer_name: form.customer_name,
         customer_phone: form.customer_phone,
+        customer_phone_2: form.customer_phone_2 || null,
         customer_code: form.customer_code || null,
         product_name: form.product_name || 'بدون منتج',
         quantity: qty, price, delivery_price: deliveryPrice,
         color: form.color, size: form.size,
+        governorate: form.governorate || null,
         address: form.address,
         notes: form.notes || '',
         priority: form.priority || 'normal',
