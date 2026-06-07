@@ -79,8 +79,8 @@ const AUTO_MAP_HINTS: Record<string, keyof ParsedOrder> = {
   'كود العميل': 'customer_code', 'الكود': 'customer_code', 'customer_code': 'customer_code', 'code': 'customer_code', 'كود': 'customer_code', 'البوليصة': 'customer_code', 'بوليصة': 'customer_code',
   'المنتج': 'product_name', 'اسم المنتج': 'product_name', 'product_name': 'product_name', 'product': 'product_name', 'منتج': 'product_name',
   'الكمية': 'quantity', 'quantity': 'quantity', 'كمية': 'quantity', 'qty': 'quantity', 'كميه': 'quantity',
-  'السعر': 'price', 'price': 'price', 'سعر': 'price', 'المبلغ': 'price', 'الاجمالي': 'price', 'total': 'price', 'amount': 'price', 'المطلوب سداده': 'price', 'المطلوب': 'price',
-  'اجمالي': 'total_amount', 'الاجمالي شامل الشحن': 'total_amount', 'total amount': 'total_amount', 'grand total': 'total_amount',
+  'السعر': 'price', 'price': 'price', 'سعر': 'price', 'المبلغ': 'price', 'total': 'price', 'amount': 'price', 'المطلوب سداده': 'price', 'المطلوب': 'price',
+  'الاجمالي': 'total_amount', 'اجمالي': 'total_amount', 'الاجمالي شامل الشحن': 'total_amount', 'total amount': 'total_amount', 'grand total': 'total_amount',
   'سعر التوصيل': 'delivery_price', 'الشحن': 'delivery_price', 'delivery_price': 'delivery_price', 'shipping': 'delivery_price', 'توصيل': 'delivery_price', 'شحن': 'delivery_price',
   'المحافظة': 'governorate', 'محافظة': 'governorate', 'مدينة': 'governorate', 'المدينة': 'governorate', 'city': 'governorate', 'governorate': 'governorate',
   'العنوان': 'address', 'address': 'address', 'عنوان': 'address', 'المنطقة': 'address', 'area': 'address',
@@ -136,14 +136,15 @@ export default function ExcelImport() {
       try {
         const data = new Uint8Array(ev.target?.result as ArrayBuffer);
         const wb = XLSX.read(data, { type: 'array', cellDates: true });
-        const sheetName = wb.SheetNames.find((name) => {
+        const nonEmptySheets = wb.SheetNames.map((name) => {
           const ws = wb.Sheets[name];
-          if (!ws || !ws['!ref']) return false;
-          const rows = XLSX.utils.sheet_to_json(ws, { defval: '', blankrows: false });
-          return rows.length > 0;
-        }) || wb.SheetNames[0];
-        const ws = wb.Sheets[sheetName];
-        const raw: Record<string, any>[] = XLSX.utils.sheet_to_json(ws, { defval: '', blankrows: false, raw: false });
+          const rows: Record<string, any>[] = ws
+            ? XLSX.utils.sheet_to_json(ws, { defval: '', blankrows: false, raw: false })
+            : [];
+          return { name, rows };
+        }).filter((sheet) => sheet.rows.length > 0);
+
+        const raw = nonEmptySheets.flatMap((sheet) => sheet.rows);
 
         if (raw.length === 0) {
           toast.error('الملف فارغ');
@@ -166,7 +167,7 @@ export default function ExcelImport() {
         }
         setColumnMapping(autoMap);
         setStep('map');
-        toast.success(`تم قراءة ${raw.length} صف و ${cols.length} عمود من شيت ${sheetName}`);
+        toast.success(`تم قراءة ${raw.length} صف من ${nonEmptySheets.length} شيت`);
       } catch {
         toast.error('خطأ في قراءة الملف');
       }
@@ -242,7 +243,7 @@ export default function ExcelImport() {
     setStep('preview');
 
     if (skipped > 0) {
-      toast.warning(`تم تجاهل ${skipped} صف بدون اسم أو رقم أو سعر`);
+      toast.warning(`تم تجاهل ${skipped} صف بدون اسم أو رقم أو مبلغ`);
     }
     toast.success(`تم تجهيز ${valid.length} أوردر صالح للاستيراد`);
   };
@@ -312,9 +313,10 @@ export default function ExcelImport() {
     if (fileRef.current) fileRef.current.value = '';
   };
 
-  const mappedRequiredFields = SYSTEM_FIELDS.filter(f => f.required).every(f =>
-    Object.values(columnMapping).includes(f.key)
-  );
+  const hasCustomerName = Object.values(columnMapping).includes('customer_name');
+  const hasCustomerPhone = Object.values(columnMapping).includes('customer_phone');
+  const hasAmount = Object.values(columnMapping).some((value) => value === 'price' || value === 'total_amount');
+  const mappedRequiredFields = hasCustomerName && hasCustomerPhone && hasAmount;
 
   return (
     <div className="space-y-4" dir="rtl">
