@@ -89,10 +89,11 @@ export default function ClosedOrders() {
     loadOrders();
   };
 
-  const updateOrderDate = async (orderId: string, field: 'collected_at' | 'return_received_at', value: string) => {
-    const { error } = await supabase.from('orders').update({ [field]: value || null } as any).eq('id', orderId);
+  const updateOrderDate = async (orderId: string, field: 'sender_collected_at' | 'sender_return_received_at', value: string) => {
+    const isoValue = value ? new Date(`${value}T00:00:00`).toISOString() : null;
+    const { error } = await supabase.from('orders').update({ [field]: isoValue } as any).eq('id', orderId);
     if (error) { toast.error('فشل الحفظ'); return; }
-    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, [field]: value || null } : o));
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, [field]: isoValue } : o));
     toast.success('تم الحفظ');
   };
 
@@ -138,14 +139,16 @@ export default function ClosedOrders() {
                    <TableHead className="text-right hidden md:table-cell">المكتب</TableHead>
                    <TableHead className="text-right hidden sm:table-cell">المندوب</TableHead>
                    <TableHead className="text-right">الحالة</TableHead>
-                   <TableHead className="text-right">تاريخ التحصيل</TableHead>
-                   <TableHead className="text-right">تاريخ رجوع المرتجع</TableHead>
+                    <TableHead className="text-right">تحصيل المندوب</TableHead>
+                    <TableHead className="text-right">رجوع مرتجع المندوب</TableHead>
+                    <TableHead className="text-right">تحصيل الراسل</TableHead>
+                    <TableHead className="text-right">رجوع مرتجع الراسل</TableHead>
                    <TableHead className="text-right hidden md:table-cell">تم القفل بواسطة</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 ? (
-                  <TableRow><TableCell colSpan={isOwner ? 13 : 12} className="text-center text-muted-foreground py-8">لا توجد أوردرات مقفلة</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={isOwner ? 15 : 14} className="text-center text-muted-foreground py-8">لا توجد أوردرات مقفلة</TableCell></TableRow>
                 ) : filtered.map(order => (
                   <TableRow key={order.id} className="border-border">
                     {isOwner && <TableCell><Checkbox checked={selected.has(order.id)} onCheckedChange={() => toggleSelect(order.id)} /></TableCell>}
@@ -163,10 +166,16 @@ export default function ClosedOrders() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Input type="date" value={order.collected_at || ''} onChange={e => updateOrderDate(order.id, 'collected_at', e.target.value)} className="h-7 w-36 bg-secondary border-border text-xs" />
+                      <div className="text-xs">{order.courier_collected_at ? new Date(order.courier_collected_at).toLocaleString('ar-EG') : '-'}</div>
                     </TableCell>
                     <TableCell>
-                      <Input type="date" value={order.return_received_at || ''} onChange={e => updateOrderDate(order.id, 'return_received_at', e.target.value)} className="h-7 w-36 bg-secondary border-border text-xs" />
+                      <div className="text-xs">{order.courier_return_received_at ? new Date(order.courier_return_received_at).toLocaleString('ar-EG') : '-'}</div>
+                    </TableCell>
+                    <TableCell>
+                      <Input type="date" value={order.sender_collected_at ? String(order.sender_collected_at).slice(0, 10) : ''} onChange={e => updateOrderDate(order.id, 'sender_collected_at', e.target.value)} className="h-7 w-36 bg-secondary border-border text-xs" />
+                    </TableCell>
+                    <TableCell>
+                      <Input type="date" value={order.sender_return_received_at ? String(order.sender_return_received_at).slice(0, 10) : ''} onChange={e => updateOrderDate(order.id, 'sender_return_received_at', e.target.value)} className="h-7 w-36 bg-secondary border-border text-xs" />
                     </TableCell>
                     <TableCell className="hidden md:table-cell text-xs">
                       <div className="font-medium">{order.closed_by ? (couriers[order.closed_by] || '—') : '—'}</div>
