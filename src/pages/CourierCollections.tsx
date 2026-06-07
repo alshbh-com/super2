@@ -16,6 +16,8 @@ import { logActivity } from '@/lib/activityLogger';
 // Note: any order assigned to a courier can be closed regardless of its status
 import { ReportButton } from '@/components/ReportButton';
 
+const formatDateTime = (value?: string | null) => value ? new Date(value).toLocaleString('ar-EG') : '-';
+
 export default function CourierCollections() {
   const { user, isOwner } = useAuth();
   const [couriers, setCouriers] = useState<any[]>([]);
@@ -217,6 +219,17 @@ export default function CourierCollections() {
     loadCourierData();
   };
 
+  const stampSelectedOrders = async (field: 'courier_collected_at' | 'courier_return_received_at', action: string) => {
+    if (selectedOrders.size === 0) { toast.error('اختر أوردرات أولاً'); return; }
+    const ids = Array.from(selectedOrders);
+    const timestamp = new Date().toISOString();
+    const { error } = await supabase.from('orders').update({ [field]: timestamp } as any).in('id', ids);
+    if (error) { toast.error(error.message); return; }
+    logActivity(action, { courier_id: selectedCourier, count: ids.length, timestamp });
+    toast.success(`تم تسجيل ${action} لـ ${ids.length} أوردر`);
+    loadCourierData();
+  };
+
   const addBonus = async () => {
     if (!bonusAmount || !selectedCourier) return;
     const { error } = await supabase.from('courier_bonuses').insert({
@@ -328,7 +341,15 @@ export default function CourierCollections() {
                   </DialogContent>
                 </Dialog>
                 {selectedOrders.size > 0 && (
-                  <Button size="sm" variant="destructive" onClick={closeSelectedOrders}><Lock className="h-4 w-4 ml-1" />تقفيل ({selectedOrders.size})</Button>
+                  <>
+                    <Button size="sm" variant="outline" onClick={() => stampSelectedOrders('courier_collected_at', 'تحصيل من المندوب')}>
+                      تم التحصيل ({selectedOrders.size})
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => stampSelectedOrders('courier_return_received_at', 'رجوع مرتجع من المندوب')}>
+                      تم رجوع المرتجع ({selectedOrders.size})
+                    </Button>
+                    <Button size="sm" variant="destructive" onClick={closeSelectedOrders}><Lock className="h-4 w-4 ml-1" />تقفيل ({selectedOrders.size})</Button>
+                  </>
                 )}
               </div>
             </CardHeader>
@@ -589,12 +610,14 @@ export default function CourierCollections() {
                       <TableHead className="text-right">المبلغ</TableHead>
                       <TableHead className="text-right">الحالة</TableHead>
                       <TableHead className="text-right">التحصيل</TableHead>
+                      <TableHead className="text-right">تاريخ التحصيل</TableHead>
+                      <TableHead className="text-right">تاريخ رجوع المرتجع</TableHead>
                       <TableHead className="text-right">تعليق</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredOrders.length === 0 ? (
-                      <TableRow><TableCell colSpan={12} className="text-center text-muted-foreground py-4">لا توجد أوردرات</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={14} className="text-center text-muted-foreground py-4">لا توجد أوردرات</TableCell></TableRow>
                     ) : filteredOrders.map(o => {
                       const collected = getCollectedAmount(o);
                       return (
@@ -641,6 +664,8 @@ export default function CourierCollections() {
                             </Select>
                           </TableCell>
                           <TableCell className="font-bold text-primary">{collected > 0 ? `${collected} ج.م` : '-'}</TableCell>
+                          <TableCell className="text-xs">{formatDateTime(o.courier_collected_at)}</TableCell>
+                          <TableCell className="text-xs">{formatDateTime(o.courier_return_received_at)}</TableCell>
                           <TableCell>
                             <Input
                               value={orderNotes[o.id] || ''}

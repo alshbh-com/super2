@@ -16,6 +16,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activityLogger';
 import { isCourierOrderVisible } from '@/lib/courierClosure';
 
+const formatDateTime = (value?: string | null) => value ? new Date(value).toLocaleString('ar-EG') : '-';
+
 export default function Couriers() {
   const { user } = useAuth();
   const [couriers, setCouriers] = useState<any[]>([]);
@@ -69,6 +71,20 @@ export default function Couriers() {
     if (!confirm(`تقفيل ${ids.length} أوردر؟`)) return;
     await supabase.from('orders').update({ is_courier_closed: true }).in('id', ids);
     toast.success(`تم تقفيل ${ids.length} أوردر`);
+    loadCourierOrders();
+  };
+
+  const stampSelected = async (field: 'courier_collected_at' | 'courier_return_received_at', label: string) => {
+    if (selectedOrders.size === 0) return;
+    const ids = Array.from(selectedOrders);
+    const value = new Date().toISOString();
+    const { error } = await supabase.from('orders').update({ [field]: value } as any).in('id', ids);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    logActivity(label, { courier_id: selectedCourier, count: ids.length, timestamp: value });
+    toast.success(`تم تسجيل ${label} لـ ${ids.length} أوردر`);
     loadCourierOrders();
   };
 
@@ -152,9 +168,17 @@ export default function Couriers() {
               <Input type="date" value={filterReceiveDate} onChange={e => setFilterReceiveDate(e.target.value)} className="h-8 w-40 bg-secondary border-border" />
               {filterReceiveDate && <Button size="sm" variant="ghost" onClick={() => setFilterReceiveDate('')}>مسح</Button>}
               {selectedOrders.size > 0 && (
-                <Button size="sm" variant="destructive" onClick={closeSelected}>
-                  <Lock className="h-4 w-4 ml-1" />تقفيل {selectedOrders.size} أوردر
-                </Button>
+                <>
+                  <Button size="sm" variant="outline" onClick={() => stampSelected('courier_collected_at', 'تحصيل من المندوب')}>
+                    تم التحصيل
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => stampSelected('courier_return_received_at', 'رجوع مرتجع من المندوب')}>
+                    تم رجوع المرتجع
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={closeSelected}>
+                    <Lock className="h-4 w-4 ml-1" />تقفيل {selectedOrders.size} أوردر
+                  </Button>
+                </>
               )}
             </div>
           </div>
@@ -171,12 +195,14 @@ export default function Couriers() {
                       <TableHead className="text-right">المنتج</TableHead>
                       <TableHead className="text-right">الإجمالي</TableHead>
                       <TableHead className="text-right">الحالة</TableHead>
+                      <TableHead className="text-right">تحصيل المندوب</TableHead>
+                      <TableHead className="text-right">رجوع مرتجع المندوب</TableHead>
                       <TableHead className="text-right">ملاحظات</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {visibleOrders.length === 0 ? (
-                      <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
                     ) : visibleOrders.map(order => (
                       <TableRow key={order.id} className="border-border">
                         <TableCell><Checkbox checked={selectedOrders.has(order.id)} onCheckedChange={() => toggleSelect(order.id)} /></TableCell>
@@ -190,6 +216,8 @@ export default function Couriers() {
                             {order.order_statuses?.name || '-'}
                           </Badge>
                         </TableCell>
+                        <TableCell className="text-xs">{formatDateTime(order.courier_collected_at)}</TableCell>
+                        <TableCell className="text-xs">{formatDateTime(order.courier_return_received_at)}</TableCell>
                         <TableCell>
                           <Button size="icon" variant="ghost" onClick={() => viewNotes(order)}><StickyNote className="h-4 w-4" /></Button>
                         </TableCell>

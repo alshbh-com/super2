@@ -770,8 +770,10 @@ export type Database = {
           collected_at: string | null
           color: string | null
           company_id: string | null
+          courier_collected_at: string | null
           courier_id: string | null
           courier_received_at: string | null
+          courier_return_received_at: string | null
           created_at: string
           customer_code: string | null
           customer_name: string | null
@@ -795,7 +797,9 @@ export type Database = {
           return_received_at: string | null
           returned_to_sender: boolean | null
           returned_to_sender_at: string | null
+          sender_collected_at: string | null
           sender_name: string | null
+          sender_return_received_at: string | null
           shipping_paid: number | null
           size: string | null
           status_id: string | null
@@ -809,8 +813,10 @@ export type Database = {
           collected_at?: string | null
           color?: string | null
           company_id?: string | null
+          courier_collected_at?: string | null
           courier_id?: string | null
           courier_received_at?: string | null
+          courier_return_received_at?: string | null
           created_at?: string
           customer_code?: string | null
           customer_name?: string | null
@@ -834,7 +840,9 @@ export type Database = {
           return_received_at?: string | null
           returned_to_sender?: boolean | null
           returned_to_sender_at?: string | null
+          sender_collected_at?: string | null
           sender_name?: string | null
+          sender_return_received_at?: string | null
           shipping_paid?: number | null
           size?: string | null
           status_id?: string | null
@@ -848,8 +856,10 @@ export type Database = {
           collected_at?: string | null
           color?: string | null
           company_id?: string | null
+          courier_collected_at?: string | null
           courier_id?: string | null
           courier_received_at?: string | null
+          courier_return_received_at?: string | null
           created_at?: string
           customer_code?: string | null
           customer_name?: string | null
@@ -873,7 +883,9 @@ export type Database = {
           return_received_at?: string | null
           returned_to_sender?: boolean | null
           returned_to_sender_at?: string | null
+          sender_collected_at?: string | null
           sender_name?: string | null
+          sender_return_received_at?: string | null
           shipping_paid?: number | null
           size?: string | null
           status_id?: string | null

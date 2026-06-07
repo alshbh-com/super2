@@ -74,7 +74,7 @@ export default function OfficeAccounts() {
   const loadOfficeOrders = async () => {
     const { data } = await supabase
       .from('orders')
-      .select('id, barcode, status_id, partial_amount, price, delivery_price, is_settled, customer_code, customer_name, customer_phone, courier_id, office_id, created_at, returned_to_sender, returned_to_sender_at, returned_to_sender_by, last_modified_by, closed_by, closed_at, collected_at, return_received_at')
+      .select('id, barcode, status_id, partial_amount, price, delivery_price, is_settled, customer_code, customer_name, customer_phone, courier_id, office_id, created_at, returned_to_sender, returned_to_sender_at, returned_to_sender_by, last_modified_by, closed_by, closed_at, collected_at, return_received_at, sender_collected_at, sender_return_received_at, courier_collected_at, courier_return_received_at')
       .eq('office_id', selectedOffice)
       .eq('is_closed', false)
       .order('created_at', { ascending: false });
@@ -87,8 +87,8 @@ export default function OfficeAccounts() {
     toast.success(settled ? 'تم تحديد كخالص' : 'تم إلغاء التحديد');
   };
 
-  const updateOrderDate = async (orderId: string, field: 'collected_at' | 'return_received_at', value: string) => {
-    const v = value || null;
+  const updateOrderDate = async (orderId: string, field: 'sender_collected_at' | 'sender_return_received_at', value: string) => {
+    const v = value ? new Date(`${value}T00:00:00`).toISOString() : null;
     const { error } = await supabase.from('orders').update({ [field]: v } as any).eq('id', orderId);
     if (error) { toast.error('فشل الحفظ'); return; }
     setOfficeOrders(prev => prev.map(o => o.id === orderId ? { ...o, [field]: v } : o));
@@ -697,8 +697,10 @@ export default function OfficeAccounts() {
                      <TableHead className="text-right">الحالة</TableHead>
                      <TableHead className="text-right">ارتجاع للراسل</TableHead>
                      <TableHead className="text-right">المندوب</TableHead>
-                     <TableHead className="text-right">تاريخ التحصيل</TableHead>
-                     <TableHead className="text-right">رجوع المرتجع</TableHead>
+                      <TableHead className="text-right">تحصيل المندوب</TableHead>
+                      <TableHead className="text-right">رجوع مرتجع المندوب</TableHead>
+                      <TableHead className="text-right">تحصيل الراسل</TableHead>
+                      <TableHead className="text-right">رجوع مرتجع الراسل</TableHead>
                      <TableHead className="text-right hidden sm:table-cell">التاريخ</TableHead>
                      <TableHead className="text-right hidden md:table-cell">آخر تعديل / قفل</TableHead>
                      <TableHead className="text-right">خالص</TableHead>
@@ -787,10 +789,16 @@ export default function OfficeAccounts() {
                         </TableCell>
                         <TableCell className="text-sm">{getCourierName(o.courier_id)}</TableCell>
                         <TableCell>
-                          <Input type="date" value={o.collected_at || ''} onChange={e => updateOrderDate(o.id, 'collected_at', e.target.value)} className="h-7 w-36 bg-secondary border-border text-xs" />
+                          <div className="text-xs">{o.courier_collected_at ? new Date(o.courier_collected_at).toLocaleString('ar-EG') : '-'}</div>
                         </TableCell>
                         <TableCell>
-                          <Input type="date" value={o.return_received_at || ''} onChange={e => updateOrderDate(o.id, 'return_received_at', e.target.value)} className="h-7 w-36 bg-secondary border-border text-xs" />
+                          <div className="text-xs">{o.courier_return_received_at ? new Date(o.courier_return_received_at).toLocaleString('ar-EG') : '-'}</div>
+                        </TableCell>
+                        <TableCell>
+                          <Input type="date" value={o.sender_collected_at ? String(o.sender_collected_at).slice(0, 10) : ''} onChange={e => updateOrderDate(o.id, 'sender_collected_at', e.target.value)} className="h-7 w-36 bg-secondary border-border text-xs" />
+                        </TableCell>
+                        <TableCell>
+                          <Input type="date" value={o.sender_return_received_at ? String(o.sender_return_received_at).slice(0, 10) : ''} onChange={e => updateOrderDate(o.id, 'sender_return_received_at', e.target.value)} className="h-7 w-36 bg-secondary border-border text-xs" />
                         </TableCell>
                         <TableCell className="text-xs hidden sm:table-cell">{createdDate}</TableCell>
                         <TableCell className="text-xs hidden md:table-cell">
@@ -818,7 +826,7 @@ export default function OfficeAccounts() {
                     <TableCell className="font-bold text-amber-500">{courierRate * filteredOrders.length} ج.م</TableCell>
                     <TableCell className="font-bold text-blue-500">{officeRate * filteredOrders.length} ج.م</TableCell>
                     <TableCell className="font-bold text-primary">{filteredOrders.reduce((s, o) => s + Number(o.price || 0) - Number(o.delivery_price || 0), 0)} ج.م</TableCell>
-                    <TableCell colSpan={8} />
+                    <TableCell colSpan={10} />
                   </TableRow>
                 </TableFooter>
               </Table>

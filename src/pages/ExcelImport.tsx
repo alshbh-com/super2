@@ -12,13 +12,17 @@ import * as XLSX from 'xlsx';
 import { useQuery } from '@tanstack/react-query';
 
 interface ParsedOrder {
+  received_at?: string;
+  sender_name?: string;
   customer_name: string;
   customer_phone: string;
+  customer_phone_2?: string;
   customer_code?: string;
   product_name?: string;
   quantity: number;
   price: number;
   delivery_price: number;
+  total_amount?: number;
   governorate?: string;
   address?: string;
   color?: string;
@@ -26,14 +30,38 @@ interface ParsedOrder {
   notes?: string;
 }
 
+const normalizeHeader = (value: string) =>
+  String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\u064B-\u065F\u0670]/g, '')
+    .replace(/[أإآ]/g, 'ا')
+    .replace(/ة/g, 'ه')
+    .replace(/[\s_\-\/\\]+/g, ' ')
+    .replace(/\s+/g, ' ');
+
+const parseNumericValue = (value: any) => {
+  if (value === null || value === undefined || value === '') return 0;
+  const normalized = String(value)
+    .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
+    .replace(/[^\d.,-]/g, '')
+    .replace(/,/g, '');
+  const parsed = parseFloat(normalized);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
 const SYSTEM_FIELDS: { key: keyof ParsedOrder; label: string; required: boolean }[] = [
+  { key: 'received_at', label: 'تاريخ الاستلام', required: false },
+  { key: 'sender_name', label: 'اسم الراسل', required: false },
   { key: 'customer_name', label: 'اسم العميل', required: true },
   { key: 'customer_phone', label: 'رقم الهاتف', required: true },
+  { key: 'customer_phone_2', label: 'رقم الهاتف 2', required: false },
   { key: 'customer_code', label: 'كود العميل', required: false },
   { key: 'product_name', label: 'المنتج', required: false },
   { key: 'quantity', label: 'الكمية', required: false },
   { key: 'price', label: 'السعر', required: true },
   { key: 'delivery_price', label: 'سعر التوصيل', required: false },
+  { key: 'total_amount', label: 'الإجمالي', required: false },
   { key: 'governorate', label: 'المحافظة', required: false },
   { key: 'address', label: 'العنوان', required: false },
   { key: 'color', label: 'اللون', required: false },
@@ -43,18 +71,35 @@ const SYSTEM_FIELDS: { key: keyof ParsedOrder; label: string; required: boolean 
 
 // Auto-detect hints for common column names
 const AUTO_MAP_HINTS: Record<string, keyof ParsedOrder> = {
+  'تاريخ الاستلام': 'received_at', 'received_at': 'received_at', 'تاريخ': 'received_at', 'date': 'received_at',
+  'اسم الراسل': 'sender_name', 'الراسل': 'sender_name', 'sender_name': 'sender_name', 'sender': 'sender_name', 'التاجر': 'sender_name',
   'اسم العميل': 'customer_name', 'customer_name': 'customer_name', 'الاسم': 'customer_name', 'اسم': 'customer_name', 'name': 'customer_name', 'العميل': 'customer_name', 'اسم المستلم': 'customer_name', 'المستلم': 'customer_name',
   'رقم الهاتف': 'customer_phone', 'الهاتف': 'customer_phone', 'الموبايل': 'customer_phone', 'customer_phone': 'customer_phone', 'phone': 'customer_phone', 'موبايل': 'customer_phone', 'رقم': 'customer_phone', 'تليفون': 'customer_phone', 'mobile': 'customer_phone', 'موبايل المستلم': 'customer_phone',
+  'رقم الهاتف 2': 'customer_phone_2', 'هاتف 2': 'customer_phone_2', 'هاتف2': 'customer_phone_2', 'phone 2': 'customer_phone_2', 'customer_phone_2': 'customer_phone_2',
   'كود العميل': 'customer_code', 'الكود': 'customer_code', 'customer_code': 'customer_code', 'code': 'customer_code', 'كود': 'customer_code', 'البوليصة': 'customer_code', 'بوليصة': 'customer_code',
   'المنتج': 'product_name', 'اسم المنتج': 'product_name', 'product_name': 'product_name', 'product': 'product_name', 'منتج': 'product_name',
   'الكمية': 'quantity', 'quantity': 'quantity', 'كمية': 'quantity', 'qty': 'quantity', 'كميه': 'quantity',
-  'السعر': 'price', 'price': 'price', 'سعر': 'price', 'المبلغ': 'price', 'الاجمالي': 'price', 'total': 'price', 'amount': 'price', 'المطلوب سداده': 'price', 'المطلوب': 'price',
+  'السعر': 'price', 'price': 'price', 'سعر': 'price', 'المبلغ': 'price', 'total': 'price', 'amount': 'price', 'المطلوب سداده': 'price', 'المطلوب': 'price',
+  'الاجمالي': 'total_amount', 'اجمالي': 'total_amount', 'الاجمالي شامل الشحن': 'total_amount', 'total amount': 'total_amount', 'grand total': 'total_amount',
   'سعر التوصيل': 'delivery_price', 'الشحن': 'delivery_price', 'delivery_price': 'delivery_price', 'shipping': 'delivery_price', 'توصيل': 'delivery_price', 'شحن': 'delivery_price',
   'المحافظة': 'governorate', 'محافظة': 'governorate', 'مدينة': 'governorate', 'المدينة': 'governorate', 'city': 'governorate', 'governorate': 'governorate',
   'العنوان': 'address', 'address': 'address', 'عنوان': 'address', 'المنطقة': 'address', 'area': 'address',
   'اللون': 'color', 'color': 'color', 'لون': 'color',
   'المقاس': 'size', 'size': 'size', 'مقاس': 'size',
   'ملاحظات': 'notes', 'notes': 'notes', 'ملاحظة': 'notes', 'note': 'notes',
+};
+
+const NORMALIZED_AUTO_MAP_HINTS = Object.fromEntries(
+  Object.entries(AUTO_MAP_HINTS).map(([key, value]) => [normalizeHeader(key), value])
+) as Record<string, keyof ParsedOrder>;
+
+const detectSystemField = (header: string) => {
+  const normalized = normalizeHeader(header);
+  if (NORMALIZED_AUTO_MAP_HINTS[normalized]) return NORMALIZED_AUTO_MAP_HINTS[normalized];
+
+  return Object.entries(NORMALIZED_AUTO_MAP_HINTS).find(([hint]) =>
+    normalized.includes(hint) || hint.includes(normalized)
+  )?.[1];
 };
 
 export default function ExcelImport() {
@@ -90,16 +135,23 @@ export default function ExcelImport() {
     reader.onload = (ev) => {
       try {
         const data = new Uint8Array(ev.target?.result as ArrayBuffer);
-        const wb = XLSX.read(data, { type: 'array' });
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        const raw: Record<string, any>[] = XLSX.utils.sheet_to_json(ws, { defval: '' });
+        const wb = XLSX.read(data, { type: 'array', cellDates: true });
+        const nonEmptySheets = wb.SheetNames.map((name) => {
+          const ws = wb.Sheets[name];
+          const rows: Record<string, any>[] = ws
+            ? XLSX.utils.sheet_to_json(ws, { defval: '', blankrows: false, raw: false })
+            : [];
+          return { name, rows };
+        }).filter((sheet) => sheet.rows.length > 0);
+
+        const raw = nonEmptySheets.flatMap((sheet) => sheet.rows);
 
         if (raw.length === 0) {
           toast.error('الملف فارغ');
           return;
         }
 
-        const cols = Object.keys(raw[0]);
+        const cols = Array.from(new Set(raw.flatMap((row) => Object.keys(row))));
         setExcelColumns(cols);
         setRawData(raw);
 
@@ -107,7 +159,7 @@ export default function ExcelImport() {
         const autoMap: Record<string, string> = {};
         const usedFields = new Set<string>();
         for (const col of cols) {
-          const hint = AUTO_MAP_HINTS[col.trim()];
+          const hint = detectSystemField(col);
           if (hint && !usedFields.has(hint)) {
             autoMap[col] = hint;
             usedFields.add(hint);
@@ -115,7 +167,7 @@ export default function ExcelImport() {
         }
         setColumnMapping(autoMap);
         setStep('map');
-        toast.success(`تم قراءة ${raw.length} صف و ${cols.length} عمود من الملف`);
+        toast.success(`تم قراءة ${raw.length} صف من ${nonEmptySheets.length} شيت`);
       } catch {
         toast.error('خطأ في قراءة الملف');
       }
@@ -147,11 +199,11 @@ export default function ExcelImport() {
       for (const [excelCol, systemField] of Object.entries(columnMapping)) {
         const val = row[excelCol];
         const key = systemField as keyof ParsedOrder;
-        if (key === 'quantity') order[key] = parseInt(String(val)) || 1;
+        if (key === 'quantity') order[key] = Math.max(1, parseInt(String(val)) || 1);
         else if (key === 'price' || key === 'delivery_price') {
-          const cleaned = String(val).replace(/,/g, '');
-          order[key] = parseFloat(cleaned) || 0;
+          order[key] = parseNumericValue(val);
         }
+        else if (key === 'total_amount') order[key] = parseNumericValue(val);
         else (order as any)[key] = String(val).trim();
       }
       // Concatenate governorate + address
@@ -159,14 +211,24 @@ export default function ExcelImport() {
       const addr = order.address || '';
       const fullAddress = gov && addr ? `${gov} - ${addr}` : gov || addr;
 
+      const rawPrice = order.price || 0;
+      const rawDelivery = (order.delivery_price && order.delivery_price > 0) ? order.delivery_price : (globalShipping ? parseFloat(globalShipping) : 0);
+      const totalAmount = order.total_amount || 0;
+      const computedPrice = rawPrice > 0 ? rawPrice : Math.max(totalAmount - rawDelivery, 0);
+      const computedDelivery = rawDelivery > 0 ? rawDelivery : Math.max(totalAmount - computedPrice, 0);
+
       return {
+        received_at: order.received_at || '',
+        sender_name: order.sender_name || '',
         customer_name: order.customer_name || '',
         customer_phone: order.customer_phone || '',
+        customer_phone_2: order.customer_phone_2 || '',
         customer_code: order.customer_code || '',
         product_name: order.product_name || 'بدون منتج',
         quantity: order.quantity || 1,
-        price: order.price || 0,
-        delivery_price: (order.delivery_price && order.delivery_price > 0) ? order.delivery_price : (globalShipping ? parseFloat(globalShipping) : 0),
+        price: computedPrice,
+        delivery_price: computedDelivery,
+        total_amount: computedPrice + computedDelivery,
         governorate: gov,
         address: fullAddress,
         color: order.color || '',
@@ -175,13 +237,13 @@ export default function ExcelImport() {
       };
     });
 
-    const valid = orders.filter(o => o.customer_name && o.customer_phone && o.price > 0);
+    const valid = orders.filter(o => o.customer_name && o.customer_phone && ((o.price + o.delivery_price) > 0));
     const skipped = orders.length - valid.length;
     setParsedOrders(valid);
     setStep('preview');
 
     if (skipped > 0) {
-      toast.warning(`تم تجاهل ${skipped} صف بدون اسم أو رقم أو سعر`);
+      toast.warning(`تم تجاهل ${skipped} صف بدون اسم أو رقم أو مبلغ`);
     }
     toast.success(`تم تجهيز ${valid.length} أوردر صالح للاستيراد`);
   };
@@ -200,11 +262,15 @@ export default function ExcelImport() {
       const batch = parsedOrders.slice(i, i + batchSize).map((o) => ({
         customer_name: o.customer_name || 'بدون اسم',
         customer_phone: o.customer_phone || '',
+        customer_phone_2: o.customer_phone_2 || null,
+        received_at: o.received_at || null,
+        sender_name: o.sender_name || null,
         customer_code: o.customer_code || null,
         product_name: o.product_name || 'بدون منتج',
         quantity: o.quantity,
         price: o.price,
         delivery_price: o.delivery_price,
+        governorate: o.governorate || null,
         address: o.address || '',
         color: o.color || '',
         size: o.size || '',
@@ -215,7 +281,7 @@ export default function ExcelImport() {
       const { data, error } = await supabase.from('orders').insert(batch).select('id');
       if (error) failed += batch.length;
       else success += data.length;
-      setProgress(Math.round(((i + batchSize) / parsedOrders.length) * 100));
+      setProgress(Math.round((Math.min(i + batchSize, parsedOrders.length) / parsedOrders.length) * 100));
     }
 
     setResult({ success, failed });
@@ -227,8 +293,8 @@ export default function ExcelImport() {
 
   const downloadTemplate = () => {
     const ws = XLSX.utils.aoa_to_sheet([
-      ['اسم العميل', 'رقم الهاتف', 'كود العميل', 'المنتج', 'الكمية', 'السعر', 'سعر التوصيل', 'العنوان', 'اللون', 'المقاس', 'ملاحظات'],
-      ['أحمد محمد', '01012345678', 'C001', 'تيشيرت', 2, 250, 50, 'القاهرة - المعادي', 'أسود', 'L', ''],
+      ['اسم العميل', 'رقم الهاتف', 'كود العميل', 'المنتج', 'الكمية', 'الاجمالي', 'سعر التوصيل', 'المحافظة', 'العنوان', 'اللون', 'المقاس', 'ملاحظات'],
+      ['أحمد محمد', '01012345678', 'C001', 'تيشيرت', 2, 250, 50, 'القاهرة', 'المعادي', 'أسود', 'L', ''],
     ]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Orders');
@@ -247,9 +313,10 @@ export default function ExcelImport() {
     if (fileRef.current) fileRef.current.value = '';
   };
 
-  const mappedRequiredFields = SYSTEM_FIELDS.filter(f => f.required).every(f =>
-    Object.values(columnMapping).includes(f.key)
-  );
+  const hasCustomerName = Object.values(columnMapping).includes('customer_name');
+  const hasCustomerPhone = Object.values(columnMapping).includes('customer_phone');
+  const hasAmount = Object.values(columnMapping).some((value) => value === 'price' || value === 'total_amount');
+  const mappedRequiredFields = hasCustomerName && hasCustomerPhone && hasAmount;
 
   return (
     <div className="space-y-4" dir="rtl">
@@ -327,7 +394,7 @@ export default function ExcelImport() {
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-xs text-muted-foreground">
-              الحقول المطلوبة: اسم العميل، رقم الهاتف، السعر. باقي الحقول اختيارية.
+              الحقول المطلوبة: اسم العميل، رقم الهاتف، والسعر أو الإجمالي. باقي الحقول اختيارية.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {excelColumns.map((col) => (
@@ -379,7 +446,7 @@ export default function ExcelImport() {
             <Button onClick={applyMapping} disabled={!mappedRequiredFields} className="w-full mt-2">
               {mappedRequiredFields
                 ? `تطبيق الربط ومعاينة ${rawData.length} صف`
-                : 'حدد الحقول المطلوبة (اسم، رقم، سعر) أولاً'}
+                : 'حدد الحقول المطلوبة (اسم، رقم، سعر أو إجمالي) أولاً'}
             </Button>
           </CardContent>
         </Card>
@@ -431,13 +498,16 @@ export default function ExcelImport() {
                 <TableHeader>
                   <TableRow className="border-border">
                     <TableHead className="text-right">#</TableHead>
-                    <TableHead className="text-right">العميل</TableHead>
-                    <TableHead className="text-right">الهاتف</TableHead>
+                     <TableHead className="text-right">تاريخ الاستلام</TableHead>
+                     <TableHead className="text-right">الراسل</TableHead>
+                     <TableHead className="text-right">العميل</TableHead>
+                     <TableHead className="text-right">الهاتف</TableHead>
                     <TableHead className="text-right">الكود</TableHead>
                     <TableHead className="text-right">المنتج</TableHead>
                     <TableHead className="text-right">الكمية</TableHead>
                     <TableHead className="text-right">السعر</TableHead>
                     <TableHead className="text-right">التوصيل</TableHead>
+                    <TableHead className="text-right">الإجمالي</TableHead>
                     <TableHead className="text-right">العنوان</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -445,6 +515,8 @@ export default function ExcelImport() {
                   {parsedOrders.slice(0, 50).map((o, i) => (
                     <TableRow key={i} className="border-border">
                       <TableCell className="text-xs text-muted-foreground">{i + 1}</TableCell>
+                        <TableCell className="text-sm">{o.received_at || '-'}</TableCell>
+                        <TableCell className="text-sm">{o.sender_name || '-'}</TableCell>
                       <TableCell className="text-sm font-medium">{o.customer_name || '-'}</TableCell>
                       <TableCell className="text-sm" dir="ltr">{o.customer_phone || '-'}</TableCell>
                       <TableCell className="text-sm">{o.customer_code || '-'}</TableCell>
@@ -452,6 +524,7 @@ export default function ExcelImport() {
                       <TableCell className="text-sm">{o.quantity}</TableCell>
                       <TableCell className="text-sm font-bold">{o.price}</TableCell>
                       <TableCell className="text-sm">{o.delivery_price}</TableCell>
+                      <TableCell className="text-sm font-bold text-primary">{o.price + o.delivery_price}</TableCell>
                       <TableCell className="text-sm" title={o.address}>{o.address || '-'}</TableCell>
                     </TableRow>
                   ))}
