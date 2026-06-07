@@ -12,13 +12,17 @@ import * as XLSX from 'xlsx';
 import { useQuery } from '@tanstack/react-query';
 
 interface ParsedOrder {
+  received_at?: string;
+  sender_name?: string;
   customer_name: string;
   customer_phone: string;
+  customer_phone_2?: string;
   customer_code?: string;
   product_name?: string;
   quantity: number;
   price: number;
   delivery_price: number;
+  total_amount?: number;
   governorate?: string;
   address?: string;
   color?: string;
@@ -47,13 +51,17 @@ const parseNumericValue = (value: any) => {
 };
 
 const SYSTEM_FIELDS: { key: keyof ParsedOrder; label: string; required: boolean }[] = [
+  { key: 'received_at', label: 'تاريخ الاستلام', required: false },
+  { key: 'sender_name', label: 'اسم الراسل', required: false },
   { key: 'customer_name', label: 'اسم العميل', required: true },
   { key: 'customer_phone', label: 'رقم الهاتف', required: true },
+  { key: 'customer_phone_2', label: 'رقم الهاتف 2', required: false },
   { key: 'customer_code', label: 'كود العميل', required: false },
   { key: 'product_name', label: 'المنتج', required: false },
   { key: 'quantity', label: 'الكمية', required: false },
   { key: 'price', label: 'السعر', required: true },
   { key: 'delivery_price', label: 'سعر التوصيل', required: false },
+  { key: 'total_amount', label: 'الإجمالي', required: false },
   { key: 'governorate', label: 'المحافظة', required: false },
   { key: 'address', label: 'العنوان', required: false },
   { key: 'color', label: 'اللون', required: false },
@@ -63,12 +71,16 @@ const SYSTEM_FIELDS: { key: keyof ParsedOrder; label: string; required: boolean 
 
 // Auto-detect hints for common column names
 const AUTO_MAP_HINTS: Record<string, keyof ParsedOrder> = {
+  'تاريخ الاستلام': 'received_at', 'received_at': 'received_at', 'تاريخ': 'received_at', 'date': 'received_at',
+  'اسم الراسل': 'sender_name', 'الراسل': 'sender_name', 'sender_name': 'sender_name', 'sender': 'sender_name', 'التاجر': 'sender_name',
   'اسم العميل': 'customer_name', 'customer_name': 'customer_name', 'الاسم': 'customer_name', 'اسم': 'customer_name', 'name': 'customer_name', 'العميل': 'customer_name', 'اسم المستلم': 'customer_name', 'المستلم': 'customer_name',
   'رقم الهاتف': 'customer_phone', 'الهاتف': 'customer_phone', 'الموبايل': 'customer_phone', 'customer_phone': 'customer_phone', 'phone': 'customer_phone', 'موبايل': 'customer_phone', 'رقم': 'customer_phone', 'تليفون': 'customer_phone', 'mobile': 'customer_phone', 'موبايل المستلم': 'customer_phone',
+  'رقم الهاتف 2': 'customer_phone_2', 'هاتف 2': 'customer_phone_2', 'هاتف2': 'customer_phone_2', 'phone 2': 'customer_phone_2', 'customer_phone_2': 'customer_phone_2',
   'كود العميل': 'customer_code', 'الكود': 'customer_code', 'customer_code': 'customer_code', 'code': 'customer_code', 'كود': 'customer_code', 'البوليصة': 'customer_code', 'بوليصة': 'customer_code',
   'المنتج': 'product_name', 'اسم المنتج': 'product_name', 'product_name': 'product_name', 'product': 'product_name', 'منتج': 'product_name',
   'الكمية': 'quantity', 'quantity': 'quantity', 'كمية': 'quantity', 'qty': 'quantity', 'كميه': 'quantity',
   'السعر': 'price', 'price': 'price', 'سعر': 'price', 'المبلغ': 'price', 'الاجمالي': 'price', 'total': 'price', 'amount': 'price', 'المطلوب سداده': 'price', 'المطلوب': 'price',
+  'اجمالي': 'total_amount', 'الاجمالي شامل الشحن': 'total_amount', 'total amount': 'total_amount', 'grand total': 'total_amount',
   'سعر التوصيل': 'delivery_price', 'الشحن': 'delivery_price', 'delivery_price': 'delivery_price', 'shipping': 'delivery_price', 'توصيل': 'delivery_price', 'شحن': 'delivery_price',
   'المحافظة': 'governorate', 'محافظة': 'governorate', 'مدينة': 'governorate', 'المدينة': 'governorate', 'city': 'governorate', 'governorate': 'governorate',
   'العنوان': 'address', 'address': 'address', 'عنوان': 'address', 'المنطقة': 'address', 'area': 'address',
@@ -80,6 +92,15 @@ const AUTO_MAP_HINTS: Record<string, keyof ParsedOrder> = {
 const NORMALIZED_AUTO_MAP_HINTS = Object.fromEntries(
   Object.entries(AUTO_MAP_HINTS).map(([key, value]) => [normalizeHeader(key), value])
 ) as Record<string, keyof ParsedOrder>;
+
+const detectSystemField = (header: string) => {
+  const normalized = normalizeHeader(header);
+  if (NORMALIZED_AUTO_MAP_HINTS[normalized]) return NORMALIZED_AUTO_MAP_HINTS[normalized];
+
+  return Object.entries(NORMALIZED_AUTO_MAP_HINTS).find(([hint]) =>
+    normalized.includes(hint) || hint.includes(normalized)
+  )?.[1];
+};
 
 export default function ExcelImport() {
   const [selectedOffice, setSelectedOffice] = useState('');
