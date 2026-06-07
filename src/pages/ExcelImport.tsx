@@ -496,8 +496,10 @@ export default function ExcelImport() {
                 <TableHeader>
                   <TableRow className="border-border">
                     <TableHead className="text-right">#</TableHead>
-                    <TableHead className="text-right">العميل</TableHead>
-                    <TableHead className="text-right">الهاتف</TableHead>
+                     <TableHead className="text-right">تاريخ الاستلام</TableHead>
+                     <TableHead className="text-right">الراسل</TableHead>
+                     <TableHead className="text-right">العميل</TableHead>
+                     <TableHead className="text-right">الهاتف</TableHead>
                     <TableHead className="text-right">الكود</TableHead>
                     <TableHead className="text-right">المنتج</TableHead>
                     <TableHead className="text-right">الكمية</TableHead>
@@ -511,6 +513,8 @@ export default function ExcelImport() {
                   {parsedOrders.slice(0, 50).map((o, i) => (
                     <TableRow key={i} className="border-border">
                       <TableCell className="text-xs text-muted-foreground">{i + 1}</TableCell>
+                        <TableCell className="text-sm">{o.received_at || '-'}</TableCell>
+                        <TableCell className="text-sm">{o.sender_name || '-'}</TableCell>
                       <TableCell className="text-sm font-medium">{o.customer_name || '-'}</TableCell>
                       <TableCell className="text-sm" dir="ltr">{o.customer_phone || '-'}</TableCell>
                       <TableCell className="text-sm">{o.customer_code || '-'}</TableCell>
