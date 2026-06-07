@@ -158,7 +158,7 @@ export default function ExcelImport() {
         const autoMap: Record<string, string> = {};
         const usedFields = new Set<string>();
         for (const col of cols) {
-          const hint = NORMALIZED_AUTO_MAP_HINTS[normalizeHeader(col)];
+          const hint = detectSystemField(col);
           if (hint && !usedFields.has(hint)) {
             autoMap[col] = hint;
             usedFields.add(hint);
@@ -202,6 +202,7 @@ export default function ExcelImport() {
         else if (key === 'price' || key === 'delivery_price') {
           order[key] = parseNumericValue(val);
         }
+        else if (key === 'total_amount') order[key] = parseNumericValue(val);
         else (order as any)[key] = String(val).trim();
       }
       // Concatenate governorate + address
@@ -209,14 +210,24 @@ export default function ExcelImport() {
       const addr = order.address || '';
       const fullAddress = gov && addr ? `${gov} - ${addr}` : gov || addr;
 
+      const rawPrice = order.price || 0;
+      const rawDelivery = (order.delivery_price && order.delivery_price > 0) ? order.delivery_price : (globalShipping ? parseFloat(globalShipping) : 0);
+      const totalAmount = order.total_amount || 0;
+      const computedPrice = rawPrice > 0 ? rawPrice : Math.max(totalAmount - rawDelivery, 0);
+      const computedDelivery = rawDelivery > 0 ? rawDelivery : Math.max(totalAmount - computedPrice, 0);
+
       return {
+        received_at: order.received_at || '',
+        sender_name: order.sender_name || '',
         customer_name: order.customer_name || '',
         customer_phone: order.customer_phone || '',
+        customer_phone_2: order.customer_phone_2 || '',
         customer_code: order.customer_code || '',
         product_name: order.product_name || 'بدون منتج',
         quantity: order.quantity || 1,
-        price: order.price || 0,
-        delivery_price: (order.delivery_price && order.delivery_price > 0) ? order.delivery_price : (globalShipping ? parseFloat(globalShipping) : 0),
+        price: computedPrice,
+        delivery_price: computedDelivery,
+        total_amount: computedPrice + computedDelivery,
         governorate: gov,
         address: fullAddress,
         color: order.color || '',
@@ -250,6 +261,9 @@ export default function ExcelImport() {
       const batch = parsedOrders.slice(i, i + batchSize).map((o) => ({
         customer_name: o.customer_name || 'بدون اسم',
         customer_phone: o.customer_phone || '',
+        customer_phone_2: o.customer_phone_2 || null,
+        received_at: o.received_at || null,
+        sender_name: o.sender_name || null,
         customer_code: o.customer_code || null,
         product_name: o.product_name || 'بدون منتج',
         quantity: o.quantity,
