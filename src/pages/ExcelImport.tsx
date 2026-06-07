@@ -151,7 +151,7 @@ export default function ExcelImport() {
           return;
         }
 
-        const cols = Object.keys(raw[0]);
+        const cols = Array.from(new Set(raw.flatMap((row) => Object.keys(row))));
         setExcelColumns(cols);
         setRawData(raw);
 
