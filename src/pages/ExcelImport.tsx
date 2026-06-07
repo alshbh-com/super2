@@ -394,7 +394,7 @@ export default function ExcelImport() {
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-xs text-muted-foreground">
-              الحقول المطلوبة: اسم العميل، رقم الهاتف، السعر. باقي الحقول اختيارية.
+              الحقول المطلوبة: اسم العميل، رقم الهاتف، والسعر أو الإجمالي. باقي الحقول اختيارية.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {excelColumns.map((col) => (
@@ -446,7 +446,7 @@ export default function ExcelImport() {
             <Button onClick={applyMapping} disabled={!mappedRequiredFields} className="w-full mt-2">
               {mappedRequiredFields
                 ? `تطبيق الربط ومعاينة ${rawData.length} صف`
-                : 'حدد الحقول المطلوبة (اسم، رقم، سعر) أولاً'}
+                : 'حدد الحقول المطلوبة (اسم، رقم، سعر أو إجمالي) أولاً'}
             </Button>
           </CardContent>
         </Card>
