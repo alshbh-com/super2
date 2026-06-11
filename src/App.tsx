@@ -17,8 +17,11 @@ import DeliveryPrices from "@/pages/DeliveryPrices";
 import Products from "@/pages/Products";
 import Couriers from "@/pages/Couriers";
 import CourierCollections from "@/pages/CourierCollections";
+import CourierReturns from "@/pages/CourierReturns";
 import CourierFollowup from "@/pages/CourierFollowup";
 import OfficeAccounts from "@/pages/OfficeAccounts";
+import MerchantCollections from "@/pages/MerchantCollections";
+import MerchantReturns from "@/pages/MerchantReturns";
 import Advances from "@/pages/Advances";
 import PrintSticker from "@/pages/PrintSticker";
 import ActivityLogs from "@/pages/ActivityLogs";
@@ -107,9 +110,12 @@ const App = () => (
               <Route path="/users" element={<UsersPage />} />
               <Route path="/customers" element={<CustomersPage />} />
               <Route path="/courier-collections" element={<CourierCollections />} />
+              <Route path="/courier-returns" element={<CourierReturns />} />
               <Route path="/courier-followup" element={<CourierFollowup />} />
               <Route path="/collections" element={<Navigate to="/courier-collections" replace />} />
               <Route path="/office-accounts" element={<OfficeAccounts />} />
+              <Route path="/merchant-collections" element={<MerchantCollections />} />
+              <Route path="/merchant-returns" element={<MerchantReturns />} />
               <Route path="/office-daily-expenses" element={<OfficeDailyExpenses />} />
               <Route path="/advances" element={<Advances />} />
               <Route path="/print" element={<PrintSticker />} />

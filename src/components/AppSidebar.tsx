@@ -38,8 +38,11 @@ const managementItems = [
 
 const accountingItems = [
   { title: 'تحصيلات المندوبين', url: '/courier-collections', icon: Wallet },
+  { title: 'مرتجعات المناديب', url: '/courier-returns', icon: Archive },
   { title: 'متابعة المندوبين', url: '/courier-followup', icon: MessageSquare },
   { title: 'حسابات المكاتب', url: '/office-accounts', icon: Building },
+  { title: 'تحصيلات التاجر', url: '/merchant-collections', icon: Wallet },
+  { title: 'مرتجعات التاجر', url: '/merchant-returns', icon: Archive },
   { title: 'مصاريف المكتب اليومية', url: '/office-daily-expenses', icon: Receipt },
   { title: 'السلفات والخصومات', url: '/advances', icon: DollarSign },
 ];
