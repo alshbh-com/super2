@@ -690,6 +690,16 @@ export default function OfficeAccounts() {
                   <span className="text-primary text-sm mr-2">- محدد: {selectedOrderIds.length}</span>
                 )}
               </h3>
+              {selectedOrderIds.length > 0 && (
+                <div className="flex gap-2 flex-wrap">
+                  <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => stampSelectedSender('sender_collected_at', 'تحصيل للتاجر')}>
+                    تحصيل للتاجر ({selectedOrderIds.length})
+                  </Button>
+                  <Button size="sm" className="bg-rose-600 hover:bg-rose-700 text-white" onClick={() => stampSelectedSender('sender_return_received_at', 'مرتجع للتاجر')}>
+                    مرتجع للتاجر ({selectedOrderIds.length})
+                  </Button>
+                </div>
+              )}
             </div>
             <div className="overflow-x-auto">
               <Table>
