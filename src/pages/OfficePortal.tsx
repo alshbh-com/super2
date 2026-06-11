@@ -5,7 +5,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { LogOut, Package, Plus, Loader2 } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { LogOut, Plus, Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,10 +20,43 @@ export default function OfficePortal() {
   const [officeId, setOfficeId] = useState<string | null>(null);
   const [canAddOrders, setCanAddOrders] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState('open');
+  const prevCounts = useState<{ collected: number; returned: number }>({ collected: 0, returned: 0 })[0];
 
   useEffect(() => {
     loadData();
   }, [user]);
+
+  // Realtime subscription on orders for this office
+  useEffect(() => {
+    if (!officeId) return;
+    const channel = supabase
+      .channel('office-orders-' + officeId)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `office_id=eq.${officeId}` }, (payload: any) => {
+        const newRow = payload.new || {};
+        const oldRow = payload.old || {};
+        if (newRow.sender_collected_at && !oldRow.sender_collected_at) {
+          try { new Audio('https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg').play().catch(() => {}); } catch {}
+          toast.success(`تم تحصيل أوردر ${newRow.barcode || ''}`);
+        }
+        if (newRow.sender_return_received_at && !oldRow.sender_return_received_at) {
+          try { new Audio('https://actions.google.com/sounds/v1/cartoon/pop.ogg').play().catch(() => {}); } catch {}
+          toast.info(`تم رجوع مرتجع ${newRow.barcode || ''}`);
+        }
+        loadOrdersOnly(officeId);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [officeId]);
+
+  const loadOrdersOnly = async (oid: string) => {
+    const { data: ords } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('office_id', oid)
+      .order('created_at', { ascending: false });
+    setOrders(ords || []);
+  };
 
   const loadData = async () => {
     if (!user) return;
@@ -49,12 +83,7 @@ export default function OfficePortal() {
     setStatuses(sts || []);
 
     if (profile?.office_id) {
-      const { data: ords } = await supabase
-        .from('orders')
-        .select('*')
-        .eq('office_id', profile.office_id)
-        .order('created_at', { ascending: false });
-      setOrders(ords || []);
+      await loadOrdersOnly(profile.office_id);
     } else {
       setOrders([]);
     }
@@ -64,6 +93,65 @@ export default function OfficePortal() {
 
   const getStatusName = (statusId: string) => statuses.find(s => s.id === statusId)?.name || '-';
   const getStatusColor = (statusId: string) => statuses.find(s => s.id === statusId)?.color || '#6b7280';
+
+  const openOrders = orders.filter(o => !o.sender_collected_at && !o.sender_return_received_at);
+  const collectedOrders = orders.filter(o => !!o.sender_collected_at);
+  const returnedOrders = orders.filter(o => !!o.sender_return_received_at);
+
+  const renderTable = (rows: any[], dateField?: 'sender_collected_at' | 'sender_return_received_at', dateLabel?: string) => (
+    <Card className="bg-card border-border">
+      <CardContent className="p-0">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-border">
+                <TableHead className="text-right">الباركود</TableHead>
+                <TableHead className="text-right">كود العميل</TableHead>
+                <TableHead className="text-right">العميل</TableHead>
+                <TableHead className="text-right">الهاتف</TableHead>
+                <TableHead className="text-right">المنتج</TableHead>
+                <TableHead className="text-right">السعر</TableHead>
+                <TableHead className="text-right">الشحن</TableHead>
+                <TableHead className="text-right">الإجمالي</TableHead>
+                <TableHead className="text-right">العنوان</TableHead>
+                <TableHead className="text-right">الحالة</TableHead>
+                {dateField && <TableHead className="text-right">{dateLabel}</TableHead>}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow><TableCell colSpan={dateField ? 11 : 10} className="text-center text-muted-foreground py-8">جارٍ التحميل...</TableCell></TableRow>
+              ) : rows.length === 0 ? (
+                <TableRow><TableCell colSpan={dateField ? 11 : 10} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
+              ) : rows.map(o => (
+                <TableRow key={o.id} className="border-border">
+                  <TableCell className="text-xs"><div className="text-muted-foreground">{new Date(o.created_at).toLocaleDateString('ar-EG')}</div><div className="font-mono font-bold">{o.barcode || '-'}</div></TableCell>
+                  <TableCell className="text-sm">{o.customer_code || '-'}</TableCell>
+                  <TableCell className="font-medium text-sm">{o.customer_name}</TableCell>
+                  <TableCell dir="ltr" className="text-sm">{o.customer_phone}</TableCell>
+                  <TableCell className="text-sm">{o.product_name}</TableCell>
+                  <TableCell className="text-sm font-bold">{o.price} ج.م</TableCell>
+                  <TableCell className="text-sm">{o.delivery_price} ج.م</TableCell>
+                  <TableCell className="text-sm font-bold">{Number(o.price) + Number(o.delivery_price)} ج.م</TableCell>
+                  <TableCell className="text-sm">{o.address || '-'}</TableCell>
+                  <TableCell>
+                    <Badge style={{ backgroundColor: getStatusColor(o.status_id) }} className="text-xs text-white">
+                      {getStatusName(o.status_id)}
+                    </Badge>
+                  </TableCell>
+                  {dateField && (
+                    <TableCell className="text-xs">
+                      {o[dateField] ? new Date(o[dateField]).toLocaleString('ar-EG') : '-'}
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="min-h-screen bg-background p-4" dir="rtl">
@@ -82,54 +170,16 @@ export default function OfficePortal() {
           </div>
         </div>
 
-        <Card className="bg-card border-border">
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-border">
-                    <TableHead className="text-right">الباركود</TableHead>
-                    <TableHead className="text-right">كود العميل</TableHead>
-                    <TableHead className="text-right">العميل</TableHead>
-                    <TableHead className="text-right">الهاتف</TableHead>
-                    <TableHead className="text-right">المنتج</TableHead>
-                    <TableHead className="text-right">السعر</TableHead>
-                    <TableHead className="text-right">الشحن</TableHead>
-                    <TableHead className="text-right">العنوان</TableHead>
-                    <TableHead className="text-right">الحالة</TableHead>
-                    <TableHead className="text-right">التاريخ</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {loading ? (
-                    <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">جارٍ التحميل...</TableCell></TableRow>
-                  ) : orders.length === 0 ? (
-                    <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
-                  ) : orders.map(o => (
-                    <TableRow key={o.id} className="border-border">
-                      <TableCell className="text-xs"><div className="text-muted-foreground">{new Date(o.created_at).toLocaleDateString('ar-EG')}</div><div className="font-mono font-bold">{o.barcode || '-'}</div></TableCell>
-                      <TableCell className="text-sm">{o.customer_code || '-'}</TableCell>
-                      <TableCell className="font-medium text-sm">{o.customer_name}</TableCell>
-                      <TableCell dir="ltr" className="text-sm">{o.customer_phone}</TableCell>
-                      <TableCell className="text-sm">{o.product_name}</TableCell>
-                      <TableCell className="text-sm font-bold">{o.price} ج.م</TableCell>
-                      <TableCell className="text-sm">{o.delivery_price} ج.م</TableCell>
-                      <TableCell className="text-sm">{o.address || '-'}</TableCell>
-                      <TableCell>
-                        <Badge style={{ backgroundColor: getStatusColor(o.status_id) }} className="text-xs text-white">
-                          {getStatusName(o.status_id)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {new Date(o.created_at).toLocaleDateString('ar-EG')}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
+        <Tabs value={tab} onValueChange={setTab}>
+          <TabsList className="grid grid-cols-3 w-full">
+            <TabsTrigger value="open">أوردرات لم تتقفل ({openOrders.length})</TabsTrigger>
+            <TabsTrigger value="collected">تم التحصيل ({collectedOrders.length})</TabsTrigger>
+            <TabsTrigger value="returned">تم المرتجع ({returnedOrders.length})</TabsTrigger>
+          </TabsList>
+          <TabsContent value="open">{renderTable(openOrders)}</TabsContent>
+          <TabsContent value="collected">{renderTable(collectedOrders, 'sender_collected_at', 'تاريخ التحصيل')}</TabsContent>
+          <TabsContent value="returned">{renderTable(returnedOrders, 'sender_return_received_at', 'تاريخ رجوع المرتجع')}</TabsContent>
+        </Tabs>
       </div>
     </div>
   );
