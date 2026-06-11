@@ -95,6 +95,17 @@ export default function OfficeAccounts() {
     toast.success('تم الحفظ');
   };
 
+  const stampSelectedSender = async (field: 'sender_collected_at' | 'sender_return_received_at', label: string) => {
+    if (selectedOrderIds.length === 0) { toast.error('اختر أوردرات أولاً'); return; }
+    const ts = new Date().toISOString();
+    const { error } = await supabase.from('orders').update({ [field]: ts } as any).in('id', selectedOrderIds);
+    if (error) { toast.error(error.message); return; }
+    setOfficeOrders(prev => prev.map(o => selectedOrderIds.includes(o.id) ? { ...o, [field]: ts } : o));
+    logActivity(label, { count: selectedOrderIds.length, office_id: selectedOffice });
+    toast.success(`تم تسجيل ${label} لـ ${selectedOrderIds.length} أوردر`);
+    setSelectedOrderIds([]);
+  };
+
   const toggleReturnedToSender = async (orderId: string, returned: boolean) => {
     const { error } = await supabase.from('orders').update({ returned_to_sender: returned } as any).eq('id', orderId);
     if (error) { toast.error('فشل التحديث'); return; }
@@ -126,6 +137,7 @@ export default function OfficeAccounts() {
     const deliveredStatus = statuses.find(s => s.name === 'تم التسليم');
     const postponedStatus = statuses.find(s => s.name === 'مؤجل');
     const partialStatus = statuses.find(s => s.name === 'تسليم جزئي');
+    const refusedShipStatus = statuses.find(s => s.name === 'رفض دفع شحن');
     const returnStatusIds = statuses
       .filter(s => ['رفض ولم يدفع شحن', 'رفض ودفع شحن', 'تهرب', 'ملغي', 'لم يرد', 'لايرد'].includes(s.name))
       .map(s => s.id);
@@ -153,8 +165,12 @@ export default function OfficeAccounts() {
       const returnedTotal = orders.filter(o => returnStatusIds.includes(o.status_id)).reduce((sum, o) => sum + Number(o.price), 0);
       const postponedTotal = orders.filter(o => o.status_id === postponedStatus?.id).reduce((sum, o) => sum + Number(o.price), 0);
       const partialCourierCollected = orders.filter(o => o.status_id === partialStatus?.id).reduce((sum, o) => sum + Number(o.partial_amount || 0), 0);
+      // رفض دفع شحن: ينزل بالسالب من تحصيلات التاجر (نخصم قيمة الشحن)
+      const refusedShippingTotal = refusedShipStatus
+        ? orders.filter(o => o.status_id === refusedShipStatus.id).reduce((sum, o) => sum + Number(o.delivery_price || 0), 0)
+        : 0;
 
-      const settlement = (deliveredTotal + partialManual) - (advancePaid + returnedTotal + shippingDiscount + commission);
+      const settlement = (deliveredTotal + partialManual) - (advancePaid + returnedTotal + shippingDiscount + commission + refusedShippingTotal);
       const settlementWithPostponed = settlement + postponedTotal;
 
       return {
@@ -674,6 +690,16 @@ export default function OfficeAccounts() {
                   <span className="text-primary text-sm mr-2">- محدد: {selectedOrderIds.length}</span>
                 )}
               </h3>
+              {selectedOrderIds.length > 0 && (
+                <div className="flex gap-2 flex-wrap">
+                  <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => stampSelectedSender('sender_collected_at', 'تحصيل للتاجر')}>
+                    تحصيل للتاجر ({selectedOrderIds.length})
+                  </Button>
+                  <Button size="sm" className="bg-rose-600 hover:bg-rose-700 text-white" onClick={() => stampSelectedSender('sender_return_received_at', 'مرتجع للتاجر')}>
+                    مرتجع للتاجر ({selectedOrderIds.length})
+                  </Button>
+                </div>
+              )}
             </div>
             <div className="overflow-x-auto">
               <Table>
