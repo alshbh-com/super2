@@ -95,6 +95,17 @@ export default function OfficeAccounts() {
     toast.success('تم الحفظ');
   };
 
+  const stampSelectedSender = async (field: 'sender_collected_at' | 'sender_return_received_at', label: string) => {
+    if (selectedOrderIds.length === 0) { toast.error('اختر أوردرات أولاً'); return; }
+    const ts = new Date().toISOString();
+    const { error } = await supabase.from('orders').update({ [field]: ts } as any).in('id', selectedOrderIds);
+    if (error) { toast.error(error.message); return; }
+    setOfficeOrders(prev => prev.map(o => selectedOrderIds.includes(o.id) ? { ...o, [field]: ts } : o));
+    logActivity(label, { count: selectedOrderIds.length, office_id: selectedOffice });
+    toast.success(`تم تسجيل ${label} لـ ${selectedOrderIds.length} أوردر`);
+    setSelectedOrderIds([]);
+  };
+
   const toggleReturnedToSender = async (orderId: string, returned: boolean) => {
     const { error } = await supabase.from('orders').update({ returned_to_sender: returned } as any).eq('id', orderId);
     if (error) { toast.error('فشل التحديث'); return; }
