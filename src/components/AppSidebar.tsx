@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 
 const mainItems = [
   { title: 'لوحة التحكم', url: '/', icon: LayoutDashboard },
+  { title: 'الشيت العمومي', url: '/general-sheet', icon: FileSpreadsheet },
   { title: 'الأوردرات', url: '/orders', icon: Package },
   { title: 'جميع الأوردرات', url: '/unassigned-orders', icon: PackageSearch },
   { title: 'الأوردرات القديمة', url: '/closed-orders', icon: Archive },
