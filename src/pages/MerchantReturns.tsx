@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { ReportButton } from '@/components/ReportButton';
 
 export default function MerchantReturns() {
   const [offices, setOffices] = useState<any[]>([]);
@@ -45,7 +46,35 @@ export default function MerchantReturns() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">مرتجعات التاجر</h1>
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <h1 className="text-2xl font-bold">مرتجعات التاجر</h1>
+        <ReportButton
+          meta={{
+            title: 'مرتجعات التاجر',
+            filtersText: [
+              selectedOffice !== 'all' ? `التاجر: ${getOfficeName(selectedOffice)}` : null,
+              selectedDate !== 'all' ? `التاريخ: ${selectedDate}` : null,
+            ].filter(Boolean).join(' | '),
+            summary: [
+              { label: 'عدد السجلات', value: filtered.length },
+              { label: 'إجمالي السعر', value: `${totalPrice} ج.م` },
+              { label: 'إجمالي الشحن', value: `${totalShipping} ج.م` },
+            ],
+          }}
+          columns={[
+            { key: 'barcode', label: 'الباركود' },
+            { key: 'customer_name', label: 'العميل' },
+            { key: 'customer_phone', label: 'الهاتف' },
+            { key: 'office_id', label: 'المكتب', format: (v) => getOfficeName(v) },
+            { key: 'price', label: 'السعر' },
+            { key: 'delivery_price', label: 'الشحن' },
+            { key: 'order_statuses', label: 'الحالة', format: (v: any) => v?.name || '-' },
+            { key: 'sender_return_received_at', label: 'تاريخ رجوع المرتجع' },
+          ]}
+          rows={filtered}
+          hideWhatsapp
+        />
+      </div>
 
       <div className="flex flex-wrap gap-3 items-end">
         <div className="space-y-1">

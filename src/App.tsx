@@ -57,6 +57,7 @@ import OfficeReport from "@/pages/OfficeReport";
 import TrashBin from "@/pages/TrashBin";
 import SystemGuide from "@/pages/SystemGuide";
 import OfficeDailyExpenses from "@/pages/OfficeDailyExpenses";
+import GeneralSheet from "@/pages/GeneralSheet";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -101,6 +102,7 @@ const App = () => (
               <Route path="/" element={<Dashboard />} />
               <Route path="/orders" element={<Orders />} />
               <Route path="/unassigned-orders" element={<UnassignedOrders />} />
+              <Route path="/general-sheet" element={<GeneralSheet />} />
               <Route path="/closed-orders" element={<ClosedOrders />} />
               <Route path="/search" element={<GlobalSearch />} />
               <Route path="/offices" element={<Offices />} />
