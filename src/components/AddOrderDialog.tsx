@@ -219,6 +219,7 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
         priority: form.priority || 'normal',
       };
       orderData.office_id = form.office_id;
+      orderData.branch_id = form.branch_id || null;
       if (form.product_id) orderData.product_id = form.product_id;
       if (form.status_id) orderData.status_id = form.status_id;
 
