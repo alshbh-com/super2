@@ -26,6 +26,7 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
   const [offices, setOffices] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [statuses, setStatuses] = useState<any[]>([]);
+  const [branches, setBranches] = useState<any[]>([]);
 
   // History for autocomplete
   const [history, setHistory] = useState<any[]>([]);
@@ -36,7 +37,7 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
     customer_name: '', customer_phone: '', customer_phone_2: '', customer_code: '',
     product_name: '', product_id: '',
     quantity: '', price: '', delivery_price: '',
-    office_id: '', status_id: '',
+    office_id: '', status_id: '', branch_id: '',
     color: '', size: '', governorate: '', address: '', notes: '',
     priority: 'normal',
   };
@@ -57,6 +58,7 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
     delivery_price: String(order?.delivery_price || 0),
     office_id: order?.office_id || '',
     status_id: order?.status_id || '',
+    branch_id: order?.branch_id || '',
     color: order?.color || '',
     size: order?.size || '',
     governorate: order?.governorate || '',
@@ -93,10 +95,11 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
   };
 
   const loadDropdowns = async (orderForEdit?: any) => {
-    const [o, p, s] = await Promise.all([
+    const [o, p, s, branchRoles] = await Promise.all([
       supabase.from('offices').select('id, name').order('name'),
       supabase.from('products').select('id, name, quantity').order('name'),
       supabase.from('order_statuses').select('id, name').order('sort_order'),
+      supabase.from('user_roles').select('user_id').eq('role', 'branch'),
     ]);
 
     const loadedOffices = o.data || [];
@@ -112,6 +115,14 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
     setOffices(loadedOffices);
     setProducts(p.data || []);
     setStatuses(s.data || []);
+
+    const branchIds = (branchRoles.data || []).map((r: any) => r.user_id);
+    if (branchIds.length) {
+      const { data: branchProfiles } = await supabase.from('profiles').select('id, full_name').in('id', branchIds);
+      setBranches(branchProfiles || []);
+    } else {
+      setBranches([]);
+    }
   };
 
   // Build unique suggestion lists
@@ -208,6 +219,7 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
         priority: form.priority || 'normal',
       };
       orderData.office_id = form.office_id;
+      orderData.branch_id = form.branch_id || null;
       if (form.product_id) orderData.product_id = form.product_id;
       if (form.status_id) orderData.status_id = form.status_id;
 
@@ -286,6 +298,20 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
                 <SelectContent>{offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>الفرع المصدر (اختياري)</Label>
+            <Select value={form.branch_id || 'none'} onValueChange={v => set('branch_id', v === 'none' ? '' : v)}>
+              <SelectTrigger className="bg-secondary border-border">
+                <SelectValue placeholder="بدون فرع" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">— بدون فرع —</SelectItem>
+                {branches.map(b => <SelectItem key={b.id} value={b.id}>🏢 {b.full_name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <p className="text-[10px] text-muted-foreground">حدد الفرع اللي طلع منه الأوردر — يساعد في معرفة مصدر الشحنة.</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

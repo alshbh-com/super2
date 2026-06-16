@@ -85,8 +85,8 @@ Deno.serve(async (req) => {
       }
 
       const { full_name, phone, login_code, role, office_id } = userData
-      if (!role || !['owner', 'admin', 'courier', 'office'].includes(role)) {
-        return new Response(JSON.stringify({ error: 'يجب اختيار الصلاحية (مالك أو مسؤول أو مندوب أو مكتب)' }), {
+      if (!role || !['owner', 'admin', 'courier', 'office', 'branch'].includes(role)) {
+        return new Response(JSON.stringify({ error: 'يجب اختيار الصلاحية (مالك أو مسؤول أو مندوب أو مكتب أو فرع)' }), {
           status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
       }

@@ -16,7 +16,7 @@ export default function Offices() {
   const [offices, setOffices] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: '', specialty: '', owner_name: '', owner_phone: '', address: '', notes: '', office_commission: '' });
+  const [form, setForm] = useState({ name: '', specialty: '', owner_name: '', owner_phone: '', address: '', notes: '', office_commission: '', return_shipping_compensation: '' });
 
   useEffect(() => { load(); }, []);
 
@@ -26,11 +26,11 @@ export default function Offices() {
   };
 
   const set = (key: string, value: string) => setForm(f => ({ ...f, [key]: value }));
-  const resetForm = () => setForm({ name: '', specialty: '', owner_name: '', owner_phone: '', address: '', notes: '', office_commission: '' });
+  const resetForm = () => setForm({ name: '', specialty: '', owner_name: '', owner_phone: '', address: '', notes: '', office_commission: '', return_shipping_compensation: '' });
 
   const save = async () => {
     if (!form.name.trim()) return;
-    const payload = {
+    const payload: any = {
       name: form.name,
       specialty: form.specialty,
       owner_name: form.owner_name,
@@ -38,6 +38,7 @@ export default function Offices() {
       address: form.address,
       notes: form.notes,
       office_commission: Number(form.office_commission) || 0,
+      return_shipping_compensation: Number(form.return_shipping_compensation) || 0,
     };
     if (editId) {
       await supabase.from('offices').update(payload).eq('id', editId);
@@ -60,7 +61,7 @@ export default function Offices() {
 
   const edit = (o: any) => {
     setEditId(o.id);
-    setForm({ name: o.name || '', specialty: o.specialty || '', owner_name: o.owner_name || '', owner_phone: o.owner_phone || '', address: o.address || '', notes: o.notes || '', office_commission: String(o.office_commission ?? '') });
+    setForm({ name: o.name || '', specialty: o.specialty || '', owner_name: o.owner_name || '', owner_phone: o.owner_phone || '', address: o.address || '', notes: o.notes || '', office_commission: String(o.office_commission ?? ''), return_shipping_compensation: String(o.return_shipping_compensation ?? '') });
     setOpen(true);
   };
 
@@ -84,7 +85,14 @@ export default function Offices() {
                 <div className="space-y-2"><Label>رقم الهاتف</Label><Input value={form.owner_phone} onChange={e => set('owner_phone', e.target.value)} className="bg-secondary border-border" dir="ltr" /></div>
               </div>
               <div className="space-y-2"><Label>العنوان</Label><Input value={form.address} onChange={e => set('address', e.target.value)} className="bg-secondary border-border" /></div>
-              <div className="space-y-2"><Label>عمولة المكتب لكل أوردر مُسلَّم (ج.م)</Label><Input type="number" value={form.office_commission} onChange={e => set('office_commission', e.target.value)} className="bg-secondary border-border" placeholder="مثال: 70" dir="ltr" /></div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2"><Label>عمولة المكتب لكل أوردر مُسلَّم (ج.م)</Label><Input type="number" value={form.office_commission} onChange={e => set('office_commission', e.target.value)} className="bg-secondary border-border" placeholder="مثال: 70" dir="ltr" /></div>
+                <div className="space-y-2">
+                  <Label>تعويض الشحن في حالة الرفض (ج.م)</Label>
+                  <Input type="number" value={form.return_shipping_compensation} onChange={e => set('return_shipping_compensation', e.target.value)} className="bg-secondary border-border" placeholder="مثال: 20" dir="ltr" />
+                  <p className="text-[10px] text-muted-foreground">يُخصم من تحصيل التاجر بدلاً من الشحن الكامل عند حالة "رفض دفع شحن"</p>
+                </div>
+              </div>
               <div className="space-y-2"><Label>ملاحظات</Label><Textarea value={form.notes} onChange={e => set('notes', e.target.value)} className="bg-secondary border-border" rows={2} /></div>
               <Button onClick={save} className="w-full">{editId ? 'حفظ التعديل' : 'إضافة'}</Button>
             </div>

@@ -47,7 +47,7 @@ export default function OfficeAccounts() {
   const [editNotes, setEditNotes] = useState('');
 
   useEffect(() => {
-    supabase.from('offices').select('id, name').order('name').then(({ data }) => setOffices(data || []));
+    supabase.from('offices').select('id, name, return_shipping_compensation').order('name').then(({ data }) => setOffices(data || []));
     supabase.from('order_statuses').select('*').order('sort_order').then(({ data }) => setStatuses(data || []));
     // Load couriers + all users for audit display
     const loadCouriers = async () => {
@@ -165,9 +165,10 @@ export default function OfficeAccounts() {
       const returnedTotal = orders.filter(o => returnStatusIds.includes(o.status_id)).reduce((sum, o) => sum + Number(o.price), 0);
       const postponedTotal = orders.filter(o => o.status_id === postponedStatus?.id).reduce((sum, o) => sum + Number(o.price), 0);
       const partialCourierCollected = orders.filter(o => o.status_id === partialStatus?.id).reduce((sum, o) => sum + Number(o.partial_amount || 0), 0);
-      // رفض دفع شحن: ينزل بالسالب من تحصيلات التاجر (نخصم قيمة الشحن)
+      // رفض دفع شحن: ينزل بالسالب من تحصيلات التاجر — نخصم قيمة "تعويض الشحن" المحددة على المكتب (وليس الشحن الكامل)
+      const compensation = Number((office as any).return_shipping_compensation || 0);
       const refusedShippingTotal = refusedShipStatus
-        ? orders.filter(o => o.status_id === refusedShipStatus.id).reduce((sum, o) => sum + Number(o.delivery_price || 0), 0)
+        ? orders.filter(o => o.status_id === refusedShipStatus.id).length * compensation
         : 0;
 
       const settlement = (deliveredTotal + partialManual) - (advancePaid + returnedTotal + shippingDiscount + commission + refusedShippingTotal);

@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { UserPlus, Trash2, Key, Shield, Eye, EyeOff } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { UserPlus, Trash2, Key, Shield, Eye, EyeOff, Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
@@ -47,6 +48,11 @@ export default function UsersPage() {
 
   // Show/hide passwords
   const [showPasswords, setShowPasswords] = useState(false);
+
+  // Tabs + search
+  const [activeTab, setActiveTab] = useState<'all' | 'owner' | 'admin' | 'courier' | 'office' | 'branch'>('all');
+  const [search, setSearch] = useState('');
+
 
   useEffect(() => { 
     loadUsers(); 
@@ -228,6 +234,7 @@ export default function UsersPage() {
     if (role === 'admin') return 'مسؤول';
     if (role === 'courier') return 'مندوب';
     if (role === 'office') return 'مكتب';
+    if (role === 'branch') return 'فرع';
     return role;
   };
 
@@ -236,8 +243,28 @@ export default function UsersPage() {
     if (role === 'admin') return 'hsl(142, 76%, 36%)';
     if (role === 'courier') return 'hsl(38, 92%, 50%)';
     if (role === 'office') return 'hsl(200, 80%, 50%)';
+    if (role === 'branch') return 'hsl(280, 70%, 55%)';
     return undefined;
   };
+
+  // Tab counts
+  const counts = {
+    all: users.length,
+    owner: users.filter(u => u.role === 'owner').length,
+    admin: users.filter(u => u.role === 'admin').length,
+    courier: users.filter(u => u.role === 'courier').length,
+    office: users.filter(u => u.role === 'office').length,
+    branch: users.filter(u => u.role === 'branch').length,
+  };
+
+  const filteredUsers = users.filter(u => {
+    if (activeTab !== 'all' && u.role !== activeTab) return false;
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      return (u.full_name || '').toLowerCase().includes(q) || (u.phone || '').toLowerCase().includes(q);
+    }
+    return true;
+  });
 
   const permLabel = (p: PermissionLevel) => {
     if (p === 'edit') return 'تعديل';
@@ -279,6 +306,7 @@ export default function UsersPage() {
                       <SelectItem value="admin">مسؤول (Admin)</SelectItem>
                       <SelectItem value="courier">مندوب (Courier)</SelectItem>
                       <SelectItem value="office">مكتب (Office)</SelectItem>
+                      <SelectItem value="branch">فرع (Branch)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -315,6 +343,23 @@ export default function UsersPage() {
         </div>
       </div>
 
+      <div className="flex flex-wrap items-center gap-2 justify-between">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-auto">
+          <TabsList>
+            <TabsTrigger value="all">الكل ({counts.all})</TabsTrigger>
+            <TabsTrigger value="owner">ملاك ({counts.owner})</TabsTrigger>
+            <TabsTrigger value="admin">مسؤولين ({counts.admin})</TabsTrigger>
+            <TabsTrigger value="courier">مناديب ({counts.courier})</TabsTrigger>
+            <TabsTrigger value="office">مكاتب ({counts.office})</TabsTrigger>
+            <TabsTrigger value="branch">فروع ({counts.branch})</TabsTrigger>
+          </TabsList>
+        </Tabs>
+        <div className="relative">
+          <Search className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="بحث بالاسم أو الهاتف..." className="w-64 pr-8 bg-secondary border-border" />
+        </div>
+      </div>
+
       <Card className="bg-card border-border">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -336,9 +381,9 @@ export default function UsersPage() {
               <TableBody>
                 {loading ? (
                   <TableRow><TableCell colSpan={isOwner && showPasswords ? 10 : 9} className="text-center text-muted-foreground py-8">جارٍ التحميل...</TableCell></TableRow>
-                ) : users.length === 0 ? (
+                ) : filteredUsers.length === 0 ? (
                   <TableRow><TableCell colSpan={isOwner && showPasswords ? 10 : 9} className="text-center text-muted-foreground py-8">لا يوجد مستخدمين</TableCell></TableRow>
-                ) : users.map(u => (
+                ) : filteredUsers.map(u => (
                   <TableRow key={u.id} className="border-border">
                     <TableCell className="font-medium">{u.full_name}</TableCell>
                     <TableCell dir="ltr">{u.phone || '-'}</TableCell>
