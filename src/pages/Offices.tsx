@@ -26,11 +26,11 @@ export default function Offices() {
   };
 
   const set = (key: string, value: string) => setForm(f => ({ ...f, [key]: value }));
-  const resetForm = () => setForm({ name: '', specialty: '', owner_name: '', owner_phone: '', address: '', notes: '', office_commission: '' });
+  const resetForm = () => setForm({ name: '', specialty: '', owner_name: '', owner_phone: '', address: '', notes: '', office_commission: '', return_shipping_compensation: '' });
 
   const save = async () => {
     if (!form.name.trim()) return;
-    const payload = {
+    const payload: any = {
       name: form.name,
       specialty: form.specialty,
       owner_name: form.owner_name,
@@ -38,6 +38,7 @@ export default function Offices() {
       address: form.address,
       notes: form.notes,
       office_commission: Number(form.office_commission) || 0,
+      return_shipping_compensation: Number(form.return_shipping_compensation) || 0,
     };
     if (editId) {
       await supabase.from('offices').update(payload).eq('id', editId);
