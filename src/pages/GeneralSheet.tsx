@@ -142,7 +142,7 @@ export default function GeneralSheet() {
             filtersText: [
               officeFilter !== 'all' ? `التاجر: ${officeName(officeFilter)}` : null,
               statusFilter !== 'all' ? `الحالة: ${statuses.find(s => s.id === statusFilter)?.name}` : null,
-              dateFilter !== 'all' ? `تاريخ الاستلام: ${dateFilter}` : null,
+              dateFilter.length ? `تاريخ الاستلام: ${dateFilter.join('، ')}` : null,
               search ? `بحث: ${search}` : null,
             ].filter(Boolean).join(' | '),
             summary: [
