@@ -16,7 +16,7 @@ export default function Offices() {
   const [offices, setOffices] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: '', specialty: '', owner_name: '', owner_phone: '', address: '', notes: '', office_commission: '' });
+  const [form, setForm] = useState({ name: '', specialty: '', owner_name: '', owner_phone: '', address: '', notes: '', office_commission: '', return_shipping_compensation: '' });
 
   useEffect(() => { load(); }, []);
 
