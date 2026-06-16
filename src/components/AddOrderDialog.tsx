@@ -37,7 +37,7 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
     customer_name: '', customer_phone: '', customer_phone_2: '', customer_code: '',
     product_name: '', product_id: '',
     quantity: '', price: '', delivery_price: '',
-    office_id: '', status_id: '',
+    office_id: '', status_id: '', branch_id: '',
     color: '', size: '', governorate: '', address: '', notes: '',
     priority: 'normal',
   };
