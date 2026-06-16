@@ -234,6 +234,7 @@ export default function UsersPage() {
     if (role === 'admin') return 'مسؤول';
     if (role === 'courier') return 'مندوب';
     if (role === 'office') return 'مكتب';
+    if (role === 'branch') return 'فرع';
     return role;
   };
 
@@ -242,8 +243,28 @@ export default function UsersPage() {
     if (role === 'admin') return 'hsl(142, 76%, 36%)';
     if (role === 'courier') return 'hsl(38, 92%, 50%)';
     if (role === 'office') return 'hsl(200, 80%, 50%)';
+    if (role === 'branch') return 'hsl(280, 70%, 55%)';
     return undefined;
   };
+
+  // Tab counts
+  const counts = {
+    all: users.length,
+    owner: users.filter(u => u.role === 'owner').length,
+    admin: users.filter(u => u.role === 'admin').length,
+    courier: users.filter(u => u.role === 'courier').length,
+    office: users.filter(u => u.role === 'office').length,
+    branch: users.filter(u => u.role === 'branch').length,
+  };
+
+  const filteredUsers = users.filter(u => {
+    if (activeTab !== 'all' && u.role !== activeTab) return false;
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      return (u.full_name || '').toLowerCase().includes(q) || (u.phone || '').toLowerCase().includes(q);
+    }
+    return true;
+  });
 
   const permLabel = (p: PermissionLevel) => {
     if (p === 'edit') return 'تعديل';
