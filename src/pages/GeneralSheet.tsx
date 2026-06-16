@@ -169,6 +169,7 @@ export default function GeneralSheet() {
             { key: 'sender_return_received_at', label: 'رجوع المرتجع للراسل', format: fmtDateTime },
           ]}
           rows={filtered}
+          selectedRows={filtered.filter(o => selected.has(o.id))}
           hideWhatsapp
         />
       </div>
@@ -176,33 +177,25 @@ export default function GeneralSheet() {
       <div className="flex flex-wrap gap-3 items-end">
         <div className="space-y-1">
           <Label className="text-xs">التاجر</Label>
-          <Select value={officeFilter} onValueChange={setOfficeFilter}>
-            <SelectTrigger className="w-48 bg-secondary border-border"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">الكل</SelectItem>
-              {offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <SearchableSelect
+            options={[{ value: 'all', label: 'كل التجار' }, ...offices.map(o => ({ value: o.id, label: o.name }))]}
+            value={officeFilter}
+            onChange={setOfficeFilter}
+            placeholder="كل التجار"
+          />
         </div>
         <div className="space-y-1">
-          <Label className="text-xs">تاريخ الاستلام</Label>
-          <Select value={dateFilter} onValueChange={setDateFilter}>
-            <SelectTrigger className="w-48 bg-secondary border-border"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">كل الأيام ({availableDates.length})</SelectItem>
-              {availableDates.map(d => <SelectItem key={d} value={d}>{new Date(d).toLocaleDateString('ar-EG')}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <Label className="text-xs">تاريخ الاستلام (متعدد)</Label>
+          <MultiDateFilter dates={availableDates} value={dateFilter} onChange={setDateFilter} />
         </div>
         <div className="space-y-1">
           <Label className="text-xs">الحالة</Label>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-48 bg-secondary border-border"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">كل الحالات</SelectItem>
-              {statuses.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <SearchableSelect
+            options={[{ value: 'all', label: 'كل الحالات' }, ...statuses.map(s => ({ value: s.id, label: s.name }))]}
+            value={statusFilter}
+            onChange={setStatusFilter}
+            placeholder="كل الحالات"
+          />
         </div>
         <div className="space-y-1">
           <Label className="text-xs">بحث</Label>
@@ -212,6 +205,7 @@ export default function GeneralSheet() {
           </div>
         </div>
       </div>
+
 
       {selected.size > 0 && (
         <Card className="bg-primary/10 border-primary/30">
