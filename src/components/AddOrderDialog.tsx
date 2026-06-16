@@ -58,6 +58,7 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
     delivery_price: String(order?.delivery_price || 0),
     office_id: order?.office_id || '',
     status_id: order?.status_id || '',
+    branch_id: order?.branch_id || '',
     color: order?.color || '',
     size: order?.size || '',
     governorate: order?.governorate || '',
