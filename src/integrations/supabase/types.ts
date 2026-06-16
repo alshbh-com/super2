@@ -634,6 +634,7 @@ export type Database = {
           office_commission: number | null
           owner_name: string | null
           owner_phone: string | null
+          return_shipping_compensation: number
           specialty: string | null
           updated_at: string
         }
@@ -647,6 +648,7 @@ export type Database = {
           office_commission?: number | null
           owner_name?: string | null
           owner_phone?: string | null
+          return_shipping_compensation?: number
           specialty?: string | null
           updated_at?: string
         }
@@ -660,6 +662,7 @@ export type Database = {
           office_commission?: number | null
           owner_name?: string | null
           owner_phone?: string | null
+          return_shipping_compensation?: number
           specialty?: string | null
           updated_at?: string
         }
@@ -766,6 +769,7 @@ export type Database = {
         Row: {
           address: string | null
           barcode: string | null
+          branch_id: string | null
           closed_at: string | null
           collected_at: string | null
           color: string | null
@@ -809,6 +813,7 @@ export type Database = {
         Insert: {
           address?: string | null
           barcode?: string | null
+          branch_id?: string | null
           closed_at?: string | null
           collected_at?: string | null
           color?: string | null
@@ -852,6 +857,7 @@ export type Database = {
         Update: {
           address?: string | null
           barcode?: string | null
+          branch_id?: string | null
           closed_at?: string | null
           collected_at?: string | null
           color?: string | null
@@ -893,6 +899,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "orders_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "orders_company_id_fkey"
             columns: ["company_id"]
@@ -1142,7 +1155,13 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "owner" | "admin" | "courier" | "office" | "accountant"
+      app_role:
+        | "owner"
+        | "admin"
+        | "courier"
+        | "office"
+        | "accountant"
+        | "branch"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1270,7 +1289,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["owner", "admin", "courier", "office", "accountant"],
+      app_role: ["owner", "admin", "courier", "office", "accountant", "branch"],
     },
   },
 } as const
