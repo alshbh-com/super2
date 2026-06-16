@@ -306,6 +306,7 @@ export default function UsersPage() {
                       <SelectItem value="admin">مسؤول (Admin)</SelectItem>
                       <SelectItem value="courier">مندوب (Courier)</SelectItem>
                       <SelectItem value="office">مكتب (Office)</SelectItem>
+                      <SelectItem value="branch">فرع (Branch)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
