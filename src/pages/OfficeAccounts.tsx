@@ -47,7 +47,7 @@ export default function OfficeAccounts() {
   const [editNotes, setEditNotes] = useState('');
 
   useEffect(() => {
-    supabase.from('offices').select('id, name').order('name').then(({ data }) => setOffices(data || []));
+    supabase.from('offices').select('id, name, return_shipping_compensation').order('name').then(({ data }) => setOffices(data || []));
     supabase.from('order_statuses').select('*').order('sort_order').then(({ data }) => setStatuses(data || []));
     // Load couriers + all users for audit display
     const loadCouriers = async () => {
