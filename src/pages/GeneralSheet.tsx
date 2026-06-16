@@ -66,9 +66,9 @@ export default function GeneralSheet() {
     let rows = orders.slice();
     if (officeFilter !== 'all') rows = rows.filter(o => o.office_id === officeFilter);
     if (statusFilter !== 'all') rows = rows.filter(o => o.status_id === statusFilter);
-    if (dateFilter !== 'all') rows = rows.filter(o => {
+    if (dateFilter.length > 0) rows = rows.filter(o => {
       const d = o.received_at || (o.created_at ? String(o.created_at).slice(0, 10) : '');
-      return String(d).slice(0, 10) === dateFilter;
+      return dateFilter.includes(String(d).slice(0, 10));
     });
     if (search.trim()) {
       const q = search.trim().toLowerCase();
