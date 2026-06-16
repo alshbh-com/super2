@@ -95,10 +95,11 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
   };
 
   const loadDropdowns = async (orderForEdit?: any) => {
-    const [o, p, s] = await Promise.all([
+    const [o, p, s, branchRoles] = await Promise.all([
       supabase.from('offices').select('id, name').order('name'),
       supabase.from('products').select('id, name, quantity').order('name'),
       supabase.from('order_statuses').select('id, name').order('sort_order'),
+      supabase.from('user_roles').select('user_id').eq('role', 'branch'),
     ]);
 
     const loadedOffices = o.data || [];
@@ -114,6 +115,14 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
     setOffices(loadedOffices);
     setProducts(p.data || []);
     setStatuses(s.data || []);
+
+    const branchIds = (branchRoles.data || []).map((r: any) => r.user_id);
+    if (branchIds.length) {
+      const { data: branchProfiles } = await supabase.from('profiles').select('id, full_name').in('id', branchIds);
+      setBranches(branchProfiles || []);
+    } else {
+      setBranches([]);
+    }
   };
 
   // Build unique suggestion lists
