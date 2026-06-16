@@ -61,7 +61,7 @@ export default function Offices() {
 
   const edit = (o: any) => {
     setEditId(o.id);
-    setForm({ name: o.name || '', specialty: o.specialty || '', owner_name: o.owner_name || '', owner_phone: o.owner_phone || '', address: o.address || '', notes: o.notes || '', office_commission: String(o.office_commission ?? '') });
+    setForm({ name: o.name || '', specialty: o.specialty || '', owner_name: o.owner_name || '', owner_phone: o.owner_phone || '', address: o.address || '', notes: o.notes || '', office_commission: String(o.office_commission ?? ''), return_shipping_compensation: String(o.return_shipping_compensation ?? '') });
     setOpen(true);
   };
 
