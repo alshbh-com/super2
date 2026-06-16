@@ -300,6 +300,20 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
             </div>
           </div>
 
+          <div className="space-y-2">
+            <Label>الفرع المصدر (اختياري)</Label>
+            <Select value={form.branch_id || 'none'} onValueChange={v => set('branch_id', v === 'none' ? '' : v)}>
+              <SelectTrigger className="bg-secondary border-border">
+                <SelectValue placeholder="بدون فرع" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">— بدون فرع —</SelectItem>
+                {branches.map(b => <SelectItem key={b.id} value={b.id}>🏢 {b.full_name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <p className="text-[10px] text-muted-foreground">حدد الفرع اللي طلع منه الأوردر — يساعد في معرفة مصدر الشحنة.</p>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>اسم العميل *</Label>
