@@ -1,71 +1,63 @@
+# خطة التعديلات المطلوبة
 
-# قسم "قراءة الباركود" (Bulk Barcode Scanning)
+## 1) إظهار بيانات أكتر في مرتجعات/تحصيلات التاجر
+- إضافة عمودين في `MerchantReturns.tsx` و `MerchantCollections.tsx`:
+  - **كود الراسل (sender code)** — من `companies.code` المربوط بالطلب
+  - **عنوان العميل** — من `orders.address`
+- نفس الأعمدة تضاف لتقارير ReportButton لهذه الصفحات.
 
-## نظرة عامة
-صفحة جديدة `/barcode-scan` تستخدم جهاز الـ Scanner (يعمل ككيبورد) لقراءة عدة أوردرات في Session واحدة، ثم تطبيق Actions جماعية عليها مع تحديث فوري (Realtime) لكل النظام.
+## 2) تصدير "كل البيانات" أو "المحدد فقط"
+- تعديل `ReportButton.tsx` ليقبل `selectedRows?: any[]`.
+- لو فيه تحديد: تظهر خيارات إضافية داخل القائمة:
+  - تصدير الكل (PDF/Excel)
+  - تصدير المحدد فقط (PDF/Excel)
+- تطبيق التحديثات في صفحات: مرتجعات المناديب، مرتجعات التاجر، تحصيلات التاجر، تحصيلات المناديب، الشيت العمومي.
 
-## ملاحظات مهمة قبل البناء
-نظامك الحالي يحتوي بالفعل على:
-- جدول `orders` فيه `barcode`, `tracking_id`, `qr_value` يتم توليدها تلقائياً عبر trigger ✅
-- جدول `order_statuses` لإدارة الحالات (لذلك لن أفرض حالات ثابتة، بل سأقرأها من قاعدة البيانات) ✅
-- جدول `activity_logs` للسجلات ✅
-- مكوّن `BarcodeScanner` للكاميرا و`PrintSticker` للطباعة ✅
-- نظام صلاحيات `usePermissions`
+## 3) فلتر تواريخ متعدد الاختيار (Multi-select)
+- استبدال `Select` الخاص بالتاريخ في صفحات:
+  `CourierReturns`, `MerchantReturns`, `MerchantCollections`, `GeneralSheet`
+  بمكون **MultiDateFilter** جديد (Popover + Checkboxes + بحث).
+- يعرض فقط الأيام التي بها بيانات (نفس منطق الفلتر الذكي الحالي).
+- يدعم اختيار يوم واحد، أو عدة أيام، أو الكل.
 
-لذلك سأبني فوق الموجود وليس تكراره.
+## 4) سيرش داخل قوائم الاختيار (Combobox)
+- إنشاء مكون `SearchableSelect` (يعتمد على `Command` + `Popover`) يستبدل `Select` العادي في كل الفلاتر المهمة:
+  - فلاتر المندوبين، المكاتب، التجار، الحالات.
+- يدعم كتابة مباشرة وفلترة فورية مع الحفاظ على نفس الـ API.
 
-## ما سيتم بناؤه
+## 5) تعويض الشحن للمكاتب (في حالة رفض دفع الشحن)
+- **DB Migration**: إضافة عمود `return_shipping_compensation NUMERIC DEFAULT 0` على جدول `offices`.
+- في صفحة `Offices.tsx` (نموذج إضافة/تعديل المكتب): إضافة حقل **"تعويض الشحن في حالة الرفض"** بجانب **"عمولة الشحن"**.
+- في `OfficeAccounts.tsx` (تسوية التاجر):
+  - الأوردر بحالة **"رفض دفع شحن"** عند تسجيله كتحصيل للتاجر → يُخصم من إجمالي المنفذات قيمة `offices.return_shipping_compensation` (وليس قيمة الشحن الكاملة).
 
-### 1. قاعدة البيانات (migration واحدة)
-- `scan_sessions`: id, user_id, started_at, ended_at, total_count, notes
-- `scan_session_items`: session_id, order_id, scanned_at, unique(session_id, order_id) لمنع التكرار
-- `order_status_history`: order_id, old_status_id, new_status_id, changed_by, changed_at, source (`scan`/`manual`/`bulk`)
-- تفعيل Realtime على `orders`, `scan_session_items`, `order_status_history`
-- RLS: authenticated فقط (متوافق مع باقي النظام)
+## 6) قسم المستخدمين: تبويبات داخلية + بحث
+- في `UsersPage.tsx` إضافة `Tabs`:
+  - مسؤولين (admin) — ملاك (owner) — مناديب (courier) — مكاتب (office) — **فروع (branch)** [جديد]
+- شريط بحث بالاسم يطبق على التبويب الحالي.
 
-### 2. الصفحة الجديدة `src/pages/BarcodeScan.tsx`
-- زر كبير "ابدأ الاسكان" → يفتح وضع الاسكان
-- Input ضخم auto-focus يستقبل قراءات المسدس (Enter = نهاية الكود)
-- Live counter + جدول بالأوردرات الممسوحة (رقم/عميل/مندوب/حالة/مبلغ/عنوان)
-- صوت نجاح/خطأ (Web Audio API، بدون ملفات)
-- منع: التكرار، الأوردرات المقفلة، غير الموجودة، المرتجعة (مع Toast واضح)
-- زر "انتهيت" → يفتح Dialog الـ Bulk Actions
+## 7) إضافة دور جديد: **فرع (branch)**
+- **DB Migration**:
+  - إضافة قيمة `'branch'` على enum `app_role`.
+  - إضافة عمود `branch_id UUID REFERENCES profiles(id)` على `orders`.
+- تعديل `AuthContext` لإضافة `isBranch`.
+- تعديل Edge function `auth-login` لإرجاع دور branch.
+- في إنشاء/تسجيل المستخدم: نوع **فرع**.
+- في `AddOrderDialog` ونماذج تعيين المندوب:
+  - حقل **الفرع** (اختياري أو إجباري — حسب اختيارك).
+  - حقل المندوب يظل بجانبه.
+- في عرض بيانات الأوردر: تظهر سطر **"الفرع: ..."** فوق **"المندوب: ..."**.
+- مستخدم الفرع يقدر يفتح قائمة الأوردرات المسندة لفرعه فقط ويعيّن مندوب منها (صفحة شبيهة بـ `UnassignedOrders` مفلترة بـ `branch_id = auth.uid()`).
 
-### 3. Bulk Actions Dialog
-- تغيير الحالة (من `order_statuses` ديناميكياً)
-- قفل الأوردرات (`is_closed=true`)
-- إرجاع للراسل (`returned_to_sender=true`)
-- تعيين/إلغاء تعيين مندوب
-- طباعة فواتير/ستيكرات جماعية (يعيد استخدام منطق `PrintSticker`)
-- تصدير PDF (jsPDF) و Excel (xlsx — موجود بالفعل في المشروع)
-- حذف من القائمة الحالية
+## 8) إصلاح "تم التسليم جزئي"
+- مراجعة منطق التقفيل (`courierClosure.ts` وصفحة تقفيل المندوب) للتأكد إن اختيار الحالة "جزئي" بيفتح Dialog بيسأل عن **القيمة المحصلة فعلياً** ويخزنها في `orders.partial_collected_amount` (أو الحقل الموجود) ويُحدّث `actual_collected`.
+- إصلاح نفس المنطق في واجهة المندوب.
 
-كل Action:
-- يُحدث `orders` (مع `last_modified_by` عبر الـ trigger الموجود)
-- يكتب صف في `order_status_history` (للتغييرات الحالاتية)
-- يكتب `activity_logs` للسجل
-- Realtime يحدّث باقي الصفحات (Orders, ClosedOrders, CourierFollowup) تلقائياً
+---
 
-### 4. الـ Sidebar
-إضافة بند جديد "قراءة الباركود" في مجموعة "الأدوات" مع أيقونة `ScanBarcode`.
+## ❓ نقطة أحتاج قرارك فيها قبل التنفيذ
+**حقل "الفرع" عند تسجيل أوردر**: إجباري ولا اختياري؟
+- **إجباري** = كل أوردر لازم له فرع مصدر (أنضف للتقارير لاحقاً).
+- **اختياري** = ممكن أوردر بدون فرع (مرونة أكتر للحالات القديمة).
 
-### 5. الـ Routing
-تسجيل المسار في `App.tsx` تحت `AppLayout` المحمي.
-
-## ما لن أبنيه (لتجنّب التضخّم)
-- `order_items`: نظامك الحالي يعتمد على صف واحد لكل أوردر (`product_id`, `quantity`); لن أغيّر هذا الـ schema الكبير.
-- `courier_daily_reports`: عندك بالفعل `courier_closings` + `courier_wallets` تؤدي نفس الغرض.
-- إعادة توليد Barcode/QR: يتم بالفعل تلقائياً عبر trigger `generate_order_barcode`.
-
-## التقنيات
-- Realtime: `supabase.channel().on('postgres_changes')`
-- Sounds: Web Audio API (بدون assets خارجية)
-- Export: مكتبة `xlsx` (موجودة) + `jspdf` (موجودة)
-- UI: shadcn + Tailwind + الـ design tokens (Neon Cyberpunk) الحالية
-
-## خطوات التنفيذ
-1. Migration واحدة (الجداول + Realtime + RLS)
-2. إنشاء `src/pages/BarcodeScan.tsx` + `src/components/BulkActionsDialog.tsx` + hook `src/hooks/useScanSession.ts`
-3. تحديث `AppSidebar` + `App.tsx`
-
-موافق أبدأ التنفيذ؟
+لو وافقت على الخطة، قول لي الإجابة وأبدأ التنفيذ بنفس الترتيب أعلاه.
