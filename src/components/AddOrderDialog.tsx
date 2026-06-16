@@ -26,6 +26,7 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
   const [offices, setOffices] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [statuses, setStatuses] = useState<any[]>([]);
+  const [branches, setBranches] = useState<any[]>([]);
 
   // History for autocomplete
   const [history, setHistory] = useState<any[]>([]);
