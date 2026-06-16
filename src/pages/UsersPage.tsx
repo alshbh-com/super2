@@ -49,6 +49,11 @@ export default function UsersPage() {
   // Show/hide passwords
   const [showPasswords, setShowPasswords] = useState(false);
 
+  // Tabs + search
+  const [activeTab, setActiveTab] = useState<'all' | 'owner' | 'admin' | 'courier' | 'office' | 'branch'>('all');
+  const [search, setSearch] = useState('');
+
+
   useEffect(() => { 
     loadUsers(); 
     supabase.from('offices').select('id, name').order('name').then(({ data }) => setOffices(data || []));
