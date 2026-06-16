@@ -24,7 +24,7 @@ export default function GeneralSheet() {
   // filters
   const [officeFilter, setOfficeFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [dateFilter, setDateFilter] = useState<string>('all');
+  const [dateFilter, setDateFilter] = useState<string[]>([]);
   const [search, setSearch] = useState('');
 
   const load = async () => {
