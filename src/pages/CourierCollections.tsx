@@ -636,14 +636,36 @@ export default function CourierCollections() {
                               value={o.status_id || ''}
                               onValueChange={async (v) => {
                                 const prev = o.status_id;
-                                setOrders(curr => curr.map(x => x.id === o.id ? { ...x, status_id: v, order_statuses: statuses.find(s => s.id === v) || null } : x));
-                                const { error } = await supabase.from('orders').update({ status_id: v }).eq('id', o.id);
+                                const newStatusName = statuses.find(s => s.id === v)?.name;
+
+                                // If switching to "تسليم جزئي" — prompt for collected amount
+                                let extraUpdate: Record<string, any> = {};
+                                if (newStatusName === 'تسليم جزئي') {
+                                  const orderPrice = Number(o.price || 0);
+                                  const input = window.prompt(`المبلغ المحصل فعلياً للأوردر (سعر الأوردر: ${orderPrice} ج.م):`, String(o.partial_amount || ''));
+                                  if (input === null) return; // cancelled
+                                  const amt = parseFloat(input);
+                                  if (!Number.isFinite(amt) || amt <= 0) { toast.error('أدخل مبلغ صحيح أكبر من 0'); return; }
+                                  if (amt > orderPrice) { toast.error('المبلغ لا يمكن أن يكون أكبر من سعر الأوردر'); return; }
+                                  extraUpdate = { partial_amount: amt, shipping_paid: 0 };
+                                }
+                                // If switching to shipping-paid statuses — prompt for shipping amount
+                                else if (newStatusName === 'رفض ودفع شحن' || newStatusName === 'استلم ودفع نص الشحن') {
+                                  const input = window.prompt(`قيمة الشحن المحصلة فعلياً (ج.م):`, String(o.shipping_paid || ''));
+                                  if (input === null) return;
+                                  const amt = parseFloat(input);
+                                  if (!Number.isFinite(amt) || amt <= 0) { toast.error('أدخل مبلغ شحن صحيح'); return; }
+                                  extraUpdate = { shipping_paid: amt, partial_amount: 0 };
+                                }
+
+                                setOrders(curr => curr.map(x => x.id === o.id ? { ...x, status_id: v, ...extraUpdate, order_statuses: statuses.find(s => s.id === v) || null } : x));
+                                const { error } = await supabase.from('orders').update({ status_id: v, ...extraUpdate }).eq('id', o.id);
                                 if (error) {
                                   toast.error('فشل تحديث الحالة');
                                   setOrders(curr => curr.map(x => x.id === o.id ? { ...x, status_id: prev, order_statuses: statuses.find(s => s.id === prev) || null } : x));
                                 } else {
                                   toast.success('تم تحديث الحالة');
-                                  logActivity('تغيير حالة أوردر من تحصيلات المندوب', { order_id: o.id, new_status_id: v });
+                                  logActivity('تغيير حالة أوردر من تحصيلات المندوب', { order_id: o.id, new_status_id: v, ...extraUpdate });
                                 }
                               }}
                             >
