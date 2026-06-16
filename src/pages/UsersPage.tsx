@@ -343,6 +343,23 @@ export default function UsersPage() {
         </div>
       </div>
 
+      <div className="flex flex-wrap items-center gap-2 justify-between">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-auto">
+          <TabsList>
+            <TabsTrigger value="all">الكل ({counts.all})</TabsTrigger>
+            <TabsTrigger value="owner">ملاك ({counts.owner})</TabsTrigger>
+            <TabsTrigger value="admin">مسؤولين ({counts.admin})</TabsTrigger>
+            <TabsTrigger value="courier">مناديب ({counts.courier})</TabsTrigger>
+            <TabsTrigger value="office">مكاتب ({counts.office})</TabsTrigger>
+            <TabsTrigger value="branch">فروع ({counts.branch})</TabsTrigger>
+          </TabsList>
+        </Tabs>
+        <div className="relative">
+          <Search className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="بحث بالاسم أو الهاتف..." className="w-64 pr-8 bg-secondary border-border" />
+        </div>
+      </div>
+
       <Card className="bg-card border-border">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
