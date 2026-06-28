@@ -283,6 +283,7 @@ export type Database = {
           office_id: string | null
           pickup_price: number | null
           price: number
+          return_compensation: number
         }
         Insert: {
           created_at?: string
@@ -291,6 +292,7 @@ export type Database = {
           office_id?: string | null
           pickup_price?: number | null
           price?: number
+          return_compensation?: number
         }
         Update: {
           created_at?: string
@@ -299,6 +301,7 @@ export type Database = {
           office_id?: string | null
           pickup_price?: number | null
           price?: number
+          return_compensation?: number
         }
         Relationships: [
           {
