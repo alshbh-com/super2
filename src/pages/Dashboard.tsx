@@ -194,21 +194,16 @@ export default function Dashboard() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">لوحة التحكم</h1>
 
-      {/* Stats cards */}
+      {/* Stats cards — منفذ + مرتجع + قيد التنفيذ + لم يعين = الإجمالي */}
       <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
         <Card className="bg-card border-border"><CardContent className="p-3 text-center">
           <Package className="h-5 w-5 mx-auto mb-1 text-primary" />
-          <p className="text-[10px] text-muted-foreground">إجمالي</p>
+          <p className="text-[10px] text-muted-foreground">إجمالي الداخل</p>
           <p className="text-lg font-bold">{stats.total}</p>
         </CardContent></Card>
         <Card className="bg-card border-border"><CardContent className="p-3 text-center">
-          <Clock className="h-5 w-5 mx-auto mb-1 text-warning" />
-          <p className="text-[10px] text-muted-foreground">مفتوح</p>
-          <p className="text-lg font-bold text-warning">{stats.open}</p>
-        </CardContent></Card>
-        <Card className="bg-card border-border"><CardContent className="p-3 text-center">
           <CheckCircle2 className="h-5 w-5 mx-auto mb-1 text-success" />
-          <p className="text-[10px] text-muted-foreground">تسليم</p>
+          <p className="text-[10px] text-muted-foreground">منفّذ</p>
           <p className="text-lg font-bold text-success">{stats.delivered}</p>
         </CardContent></Card>
         <Card className="bg-card border-border"><CardContent className="p-3 text-center">
@@ -217,9 +212,14 @@ export default function Dashboard() {
           <p className="text-lg font-bold text-destructive">{stats.returned}</p>
         </CardContent></Card>
         <Card className="bg-card border-border"><CardContent className="p-3 text-center">
-          <Calendar className="h-5 w-5 mx-auto mb-1 text-primary" />
-          <p className="text-[10px] text-muted-foreground">اليوم</p>
-          <p className="text-lg font-bold">{stats.todayCount}</p>
+          <Clock className="h-5 w-5 mx-auto mb-1 text-warning" />
+          <p className="text-[10px] text-muted-foreground">قيد التنفيذ</p>
+          <p className="text-lg font-bold text-warning">{stats.inProgress}</p>
+        </CardContent></Card>
+        <Card className="bg-card border-border"><CardContent className="p-3 text-center">
+          <Package className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
+          <p className="text-[10px] text-muted-foreground">لم يُعيَّن</p>
+          <p className="text-lg font-bold">{stats.unassigned}</p>
         </CardContent></Card>
         <Card className="bg-card border-border"><CardContent className="p-3 text-center">
           <DollarSign className="h-5 w-5 mx-auto mb-1 text-success" />
@@ -227,6 +227,7 @@ export default function Dashboard() {
           <p className="text-lg font-bold">{stats.todayShipping.toLocaleString()}</p>
         </CardContent></Card>
       </div>
+
 
       {/* Section shortcuts */}
       <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
