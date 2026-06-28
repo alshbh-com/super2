@@ -113,13 +113,14 @@ export default function Dashboard() {
   const loadStats = async () => {
     const today = new Date().toISOString().split('T')[0];
     const [allRes, statusRes] = await Promise.all([
-      supabase.from('orders').select('id, is_closed, status_id, price, delivery_price, shipping_paid, created_at'),
+      supabase.from('orders').select('id, courier_id, is_closed, status_id, price, delivery_price, shipping_paid, created_at'),
       supabase.from('order_statuses').select('id, name'),
     ]);
     const all = allRes.data || [];
     const sts = statusRes.data || [];
-    const deliveredIds = sts.filter(s => s.name === 'تم التسليم' || s.name === 'تسليم جزئي').map(s => s.id);
-    const returnedIds = sts.filter(s => ['مرتجع', 'رفض ودفع شحن', 'رفض ولم يدفع شحن', 'تهرب', 'ملغي', 'لم يرد'].includes(s.name)).map(s => s.id);
+    const deliveredIds = sts.filter(s => ['تم التسليم', 'تسليم جزئي', 'استلم ودفع نص الشحن'].includes(s.name)).map(s => s.id);
+    const returnedIds = sts.filter(s => ['مرتجع', 'مرتجع لم يدفع شحن', 'رفض ودفع شحن', 'رفض دفع شحن', 'ملغي'].includes(s.name)).map(s => s.id);
+    const inProgressIds = sts.filter(s => ['قيد التوصيل', 'مؤجل', 'مؤجل لخط سير المندوب', 'مؤجل من العميل'].includes(s.name)).map(s => s.id);
     const rejectPaidShipId = sts.find(s => s.name === 'رفض ودفع شحن')?.id;
     const halfShipId = sts.find(s => s.name === 'استلم ودفع نص الشحن')?.id;
     const todayOrders = all.filter(o => o.created_at.startsWith(today));
@@ -128,7 +129,12 @@ export default function Dashboard() {
       if (o.status_id === rejectPaidShipId || o.status_id === halfShipId) return s + Number(o.shipping_paid || 0);
       return s;
     }, 0);
-    setStats({ total: all.length, open: all.filter(o => !o.is_closed).length, delivered: all.filter(o => deliveredIds.includes(o.status_id)).length, returned: all.filter(o => returnedIds.includes(o.status_id)).length, todayCount: todayOrders.length, todayShipping });
+    const delivered = all.filter(o => deliveredIds.includes(o.status_id)).length;
+    const returned = all.filter(o => returnedIds.includes(o.status_id)).length;
+    const unassigned = all.filter(o => !o.courier_id).length;
+    // In-progress = assigned + not delivered/returned/unassigned
+    const inProgress = all.filter(o => o.courier_id && (inProgressIds.includes(o.status_id) || (!deliveredIds.includes(o.status_id) && !returnedIds.includes(o.status_id)))).length;
+    setStats({ total: all.length, delivered, returned, inProgress, unassigned, todayCount: todayOrders.length, todayShipping });
   };
 
   const loadChatContacts = async () => {
