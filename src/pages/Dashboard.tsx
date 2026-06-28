@@ -57,7 +57,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { canView } = usePermissions();
-  const [stats, setStats] = useState({ total: 0, open: 0, delivered: 0, returned: 0, todayCount: 0, todayShipping: 0 });
+  const [stats, setStats] = useState({ total: 0, delivered: 0, returned: 0, inProgress: 0, unassigned: 0, todayCount: 0, todayShipping: 0 });
 
   // Chat state
   const [chatOpen, setChatOpen] = useState(false);
@@ -113,13 +113,14 @@ export default function Dashboard() {
   const loadStats = async () => {
     const today = new Date().toISOString().split('T')[0];
     const [allRes, statusRes] = await Promise.all([
-      supabase.from('orders').select('id, is_closed, status_id, price, delivery_price, shipping_paid, created_at'),
+      supabase.from('orders').select('id, courier_id, is_closed, status_id, price, delivery_price, shipping_paid, created_at'),
       supabase.from('order_statuses').select('id, name'),
     ]);
     const all = allRes.data || [];
     const sts = statusRes.data || [];
-    const deliveredIds = sts.filter(s => s.name === 'تم التسليم' || s.name === 'تسليم جزئي').map(s => s.id);
-    const returnedIds = sts.filter(s => ['مرتجع', 'رفض ودفع شحن', 'رفض ولم يدفع شحن', 'تهرب', 'ملغي', 'لم يرد'].includes(s.name)).map(s => s.id);
+    const deliveredIds = sts.filter(s => ['تم التسليم', 'تسليم جزئي', 'استلم ودفع نص الشحن'].includes(s.name)).map(s => s.id);
+    const returnedIds = sts.filter(s => ['مرتجع', 'مرتجع لم يدفع شحن', 'رفض ودفع شحن', 'رفض دفع شحن', 'ملغي'].includes(s.name)).map(s => s.id);
+    const inProgressIds = sts.filter(s => ['قيد التوصيل', 'مؤجل', 'مؤجل لخط سير المندوب', 'مؤجل من العميل'].includes(s.name)).map(s => s.id);
     const rejectPaidShipId = sts.find(s => s.name === 'رفض ودفع شحن')?.id;
     const halfShipId = sts.find(s => s.name === 'استلم ودفع نص الشحن')?.id;
     const todayOrders = all.filter(o => o.created_at.startsWith(today));
@@ -128,7 +129,12 @@ export default function Dashboard() {
       if (o.status_id === rejectPaidShipId || o.status_id === halfShipId) return s + Number(o.shipping_paid || 0);
       return s;
     }, 0);
-    setStats({ total: all.length, open: all.filter(o => !o.is_closed).length, delivered: all.filter(o => deliveredIds.includes(o.status_id)).length, returned: all.filter(o => returnedIds.includes(o.status_id)).length, todayCount: todayOrders.length, todayShipping });
+    const delivered = all.filter(o => deliveredIds.includes(o.status_id)).length;
+    const returned = all.filter(o => returnedIds.includes(o.status_id)).length;
+    const unassigned = all.filter(o => !o.courier_id).length;
+    // In-progress = assigned + not delivered/returned/unassigned
+    const inProgress = all.filter(o => o.courier_id && (inProgressIds.includes(o.status_id) || (!deliveredIds.includes(o.status_id) && !returnedIds.includes(o.status_id)))).length;
+    setStats({ total: all.length, delivered, returned, inProgress, unassigned, todayCount: todayOrders.length, todayShipping });
   };
 
   const loadChatContacts = async () => {
@@ -188,21 +194,16 @@ export default function Dashboard() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">لوحة التحكم</h1>
 
-      {/* Stats cards */}
+      {/* Stats cards — منفذ + مرتجع + قيد التنفيذ + لم يعين = الإجمالي */}
       <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
         <Card className="bg-card border-border"><CardContent className="p-3 text-center">
           <Package className="h-5 w-5 mx-auto mb-1 text-primary" />
-          <p className="text-[10px] text-muted-foreground">إجمالي</p>
+          <p className="text-[10px] text-muted-foreground">إجمالي الداخل</p>
           <p className="text-lg font-bold">{stats.total}</p>
         </CardContent></Card>
         <Card className="bg-card border-border"><CardContent className="p-3 text-center">
-          <Clock className="h-5 w-5 mx-auto mb-1 text-warning" />
-          <p className="text-[10px] text-muted-foreground">مفتوح</p>
-          <p className="text-lg font-bold text-warning">{stats.open}</p>
-        </CardContent></Card>
-        <Card className="bg-card border-border"><CardContent className="p-3 text-center">
           <CheckCircle2 className="h-5 w-5 mx-auto mb-1 text-success" />
-          <p className="text-[10px] text-muted-foreground">تسليم</p>
+          <p className="text-[10px] text-muted-foreground">منفّذ</p>
           <p className="text-lg font-bold text-success">{stats.delivered}</p>
         </CardContent></Card>
         <Card className="bg-card border-border"><CardContent className="p-3 text-center">
@@ -211,9 +212,14 @@ export default function Dashboard() {
           <p className="text-lg font-bold text-destructive">{stats.returned}</p>
         </CardContent></Card>
         <Card className="bg-card border-border"><CardContent className="p-3 text-center">
-          <Calendar className="h-5 w-5 mx-auto mb-1 text-primary" />
-          <p className="text-[10px] text-muted-foreground">اليوم</p>
-          <p className="text-lg font-bold">{stats.todayCount}</p>
+          <Clock className="h-5 w-5 mx-auto mb-1 text-warning" />
+          <p className="text-[10px] text-muted-foreground">قيد التنفيذ</p>
+          <p className="text-lg font-bold text-warning">{stats.inProgress}</p>
+        </CardContent></Card>
+        <Card className="bg-card border-border"><CardContent className="p-3 text-center">
+          <Package className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
+          <p className="text-[10px] text-muted-foreground">لم يُعيَّن</p>
+          <p className="text-lg font-bold">{stats.unassigned}</p>
         </CardContent></Card>
         <Card className="bg-card border-border"><CardContent className="p-3 text-center">
           <DollarSign className="h-5 w-5 mx-auto mb-1 text-success" />
@@ -221,6 +227,7 @@ export default function Dashboard() {
           <p className="text-lg font-bold">{stats.todayShipping.toLocaleString()}</p>
         </CardContent></Card>
       </div>
+
 
       {/* Section shortcuts */}
       <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">

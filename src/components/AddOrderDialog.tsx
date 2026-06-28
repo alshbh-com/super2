@@ -409,9 +409,16 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
           </div>
 
           <div className="p-3 bg-secondary rounded-lg border border-border text-center">
-            <span className="text-sm text-muted-foreground">إجمالي التحصيل: </span>
-            <span className="text-lg font-bold">{totalCollection} ج.م</span>
+            <span className="text-sm text-muted-foreground">إجمالي التحصيل (السعر + الشحن): </span>
+            <span className="text-lg font-bold text-primary">{totalCollection} ج.م</span>
+            {Number(form.delivery_price) === 0 && Number(form.price) > 0 && (
+              <span className="block text-[11px] text-emerald-600 mt-1">شحن مجاني</span>
+            )}
+            {Number(form.price) === 0 && Number(form.delivery_price) > 0 && (
+              <span className="block text-[11px] text-amber-600 mt-1">شحن فقط (بدون منتج)</span>
+            )}
           </div>
+
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">
