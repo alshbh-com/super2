@@ -7,32 +7,36 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ReportButton } from '@/components/ReportButton';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import { MultiDateFilter } from '@/components/MultiDateFilter';
+import { MultiSearchableSelect } from '@/components/MultiSearchableSelect';
+import { computeOrderTotal, computeCollectedFromCustomer, isRefusalStatus, isDeliveredStatus } from '@/lib/orderCalc';
 
 export default function MerchantCollections() {
   const [offices, setOffices] = useState<any[]>([]);
-  const [selectedOffice, setSelectedOffice] = useState<string>('all');
+  const [prices, setPrices] = useState<any[]>([]); // delivery_prices (office_id + governorate)
+  const [selectedOffices, setSelectedOffices] = useState<string[]>([]);
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    // Need return_shipping_compensation to discount rejected shipments correctly
-    supabase.from('offices').select('id, name, return_shipping_compensation').order('name').then(({ data }) => setOffices(data || []));
+    supabase.from('offices').select('id, name, office_commission, return_shipping_compensation').order('name').then(({ data }) => setOffices(data || []));
+    supabase.from('delivery_prices').select('office_id, governorate, price, return_compensation').then(({ data }) => setPrices(data || []));
   }, []);
 
   useEffect(() => {
     (async () => {
       let q = supabase.from('orders')
-        .select('id, barcode, customer_code, customer_name, customer_phone, address, price, delivery_price, office_id, sender_collected_at, status_id, order_statuses(name, color)')
+        .select('id, barcode, customer_code, customer_name, customer_phone, address, governorate, price, delivery_price, partial_amount, shipping_paid, office_id, sender_collected_at, status_id, order_statuses(name, color)')
         .not('sender_collected_at', 'is', null)
         .order('sender_collected_at', { ascending: false });
-      if (selectedOffice !== 'all') q = q.eq('office_id', selectedOffice);
+      if (selectedOffices.length === 1) q = q.eq('office_id', selectedOffices[0]);
+      else if (selectedOffices.length > 1) q = q.in('office_id', selectedOffices);
       const { data } = await q;
       setOrders(data || []);
       setSelectedDates([]);
       setSelected(new Set());
     })();
-  }, [selectedOffice]);
+  }, [selectedOffices]);
 
   const availableDates = useMemo(() => {
     const set = new Set<string>();
@@ -48,28 +52,55 @@ export default function MerchantCollections() {
   const getOffice = (id: string) => offices.find(o => o.id === id);
   const getOfficeName = (id: string) => getOffice(id)?.name || '-';
 
-  // Net per row: price - shipping; but if status === "رفض دفع شحن", deduct only the office's return_shipping_compensation
-  const computeNet = (o: any): { net: number; isRefused: boolean; deducted: number } => {
-    const statusName = (o.order_statuses as any)?.name;
-    const isRefused = statusName === 'رفض دفع شحن';
-    if (isRefused) {
-      const comp = Number(getOffice(o.office_id)?.return_shipping_compensation || 0);
-      return { net: Number(o.price || 0) - comp, isRefused: true, deducted: comp };
-    }
-    return { net: Number(o.price || 0) - Number(o.delivery_price || 0), isRefused: false, deducted: Number(o.delivery_price || 0) };
+  /** Lookup the company commission for an order: office-specific governorate price > global governorate price > office.office_commission default. */
+  const commissionFor = (o: any): number => {
+    const gov = o.governorate || '';
+    const officeSpecific = prices.find(p => p.office_id === o.office_id && p.governorate === gov);
+    if (officeSpecific) return Number(officeSpecific.price || 0);
+    const global = prices.find(p => !p.office_id && p.governorate === gov);
+    if (global) return Number(global.price || 0);
+    return Number(getOffice(o.office_id)?.office_commission || 0);
   };
 
-  const totalPrice = filtered.reduce((s, o) => s + Number(o.price || 0), 0);
-  const totalShipping = filtered.reduce((s, o) => s + computeNet(o).deducted, 0);
-  const netDue = totalPrice - totalShipping;
+  /** Refund-shipping deduction: per-governorate return_compensation, else office's default, else 0. */
+  const returnCompFor = (o: any): number => {
+    const gov = o.governorate || '';
+    const officeSpecific = prices.find(p => p.office_id === o.office_id && p.governorate === gov);
+    if (officeSpecific && officeSpecific.return_compensation != null) return Number(officeSpecific.return_compensation || 0);
+    const global = prices.find(p => !p.office_id && p.governorate === gov);
+    if (global && global.return_compensation != null) return Number(global.return_compensation || 0);
+    return Number(getOffice(o.office_id)?.return_shipping_compensation || 0);
+  };
 
-  const toggle = (id: string) => setSelected(prev => {
-    const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n;
-  });
+  /** Per-row computation. */
+  const computeRow = (o: any) => {
+    const statusName = (o.order_statuses as any)?.name;
+    const gross = computeCollectedFromCustomer(o, statusName); // money collected from customer for THIS order
+    const refusal = isRefusalStatus(statusName);
+    const delivered = isDeliveredStatus(statusName);
+    // Company deduction per order: full commission on delivered; only return-compensation on refusal; nothing otherwise.
+    const companyCut = delivered ? commissionFor(o) : refusal ? returnCompFor(o) : 0;
+    const net = gross - companyCut;
+    return { gross, companyCut, net, statusName };
+  };
+
+  const rowsWithCalc = useMemo(() => filtered.map(o => ({ o, ...computeRow(o) })), [filtered, prices, offices]);
+
+  const totalGross = rowsWithCalc.reduce((s, r) => s + r.gross, 0);
+  const totalCut = rowsWithCalc.reduce((s, r) => s + r.companyCut, 0);
+  const totalNet = totalGross - totalCut;
+  const deliveredCount = rowsWithCalc.filter(r => isDeliveredStatus(r.statusName)).length;
+
+  const toggle = (id: string) => setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const toggleAll = () => setSelected(prev => prev.size === filtered.length ? new Set() : new Set(filtered.map(o => o.id)));
   const selectedRows = filtered.filter(o => selected.has(o.id));
 
-  const officeOptions = [{ value: 'all', label: 'كل التجار' }, ...offices.map(o => ({ value: o.id, label: o.name }))];
+  const officeOptions = offices.map(o => ({ value: o.id, label: o.name }));
+
+  const filtersText = [
+    selectedOffices.length ? `التجار: ${selectedOffices.map(getOfficeName).join('، ')}` : null,
+    selectedDates.length ? `التواريخ: ${selectedDates.join('، ')}` : null,
+  ].filter(Boolean).join(' | ');
 
   return (
     <div className="space-y-4">
@@ -78,15 +109,13 @@ export default function MerchantCollections() {
         <ReportButton
           meta={{
             title: 'تحصيلات التاجر',
-            filtersText: [
-              selectedOffice !== 'all' ? `التاجر: ${getOfficeName(selectedOffice)}` : null,
-              selectedDates.length ? `التواريخ: ${selectedDates.join('، ')}` : null,
-            ].filter(Boolean).join(' | '),
+            filtersText,
             summary: [
               { label: 'عدد الأوردرات', value: filtered.length },
-              { label: 'إجمالي السعر', value: `${totalPrice} ج.م` },
-              { label: 'إجمالي الخصومات (شحن/تعويض)', value: `${totalShipping} ج.م` },
-              { label: 'المستحق للتاجر', value: `${netDue} ج.م` },
+              { label: 'تم التسليم', value: deliveredCount },
+              { label: 'إجمالي المحصَّل', value: `${totalGross} ج.م` },
+              { label: 'عمولة الشركة', value: `${totalCut} ج.م` },
+              { label: 'صافي التاجر', value: `${totalNet} ج.م` },
             ],
           }}
           columns={[
@@ -95,10 +124,14 @@ export default function MerchantCollections() {
             { key: 'customer_name', label: 'العميل' },
             { key: 'customer_phone', label: 'الهاتف' },
             { key: 'address', label: 'العنوان' },
+            { key: 'governorate', label: 'المحافظة' },
             { key: 'office_id', label: 'التاجر', format: (v) => getOfficeName(v) },
             { key: 'price', label: 'السعر' },
             { key: 'delivery_price', label: 'الشحن' },
-            { key: 'net', label: 'الصافي', format: (_: any, r: any) => computeNet(r).net },
+            { key: 'total', label: 'الإجمالي', format: (_: any, r: any) => computeOrderTotal(r) },
+            { key: 'gross', label: 'المحصَّل', format: (_: any, r: any) => computeRow(r).gross },
+            { key: 'commission', label: 'عمولة الشركة', format: (_: any, r: any) => computeRow(r).companyCut },
+            { key: 'net', label: 'الصافي للتاجر', format: (_: any, r: any) => computeRow(r).net },
             { key: 'order_statuses', label: 'الحالة', format: (v: any) => v?.name || '-' },
             { key: 'sender_collected_at', label: 'تاريخ التحصيل' },
           ]}
@@ -110,8 +143,8 @@ export default function MerchantCollections() {
 
       <div className="flex flex-wrap gap-3 items-end">
         <div className="space-y-1">
-          <Label className="text-xs">التاجر / المكتب</Label>
-          <SearchableSelect options={officeOptions} value={selectedOffice} onChange={setSelectedOffice} placeholder="كل التجار" />
+          <Label className="text-xs">التاجر / المكتب (متعدد)</Label>
+          <MultiSearchableSelect options={officeOptions} value={selectedOffices} onChange={setSelectedOffices} placeholder="كل التجار" />
         </div>
         <div className="space-y-1">
           <Label className="text-xs">تاريخ التحصيل (متعدد)</Label>
@@ -119,11 +152,12 @@ export default function MerchantCollections() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <Card className="bg-card border-border"><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">عدد الأوردرات</p><p className="text-lg font-bold">{filtered.length}</p></CardContent></Card>
-        <Card className="bg-card border-border"><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">إجمالي السعر</p><p className="text-lg font-bold text-emerald-500">{totalPrice} ج.م</p></CardContent></Card>
-        <Card className="bg-card border-border"><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">خصم الشحن/التعويض</p><p className="text-lg font-bold text-amber-500">{totalShipping} ج.م</p></CardContent></Card>
-        <Card className="bg-card border-border"><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">المستحق للتاجر</p><p className="text-lg font-bold text-primary">{netDue} ج.م</p></CardContent></Card>
+        <Card className="bg-card border-border"><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">تم التسليم</p><p className="text-lg font-bold text-emerald-500">{deliveredCount}</p></CardContent></Card>
+        <Card className="bg-card border-border"><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">إجمالي المحصَّل</p><p className="text-lg font-bold text-emerald-500">{totalGross} ج.م</p></CardContent></Card>
+        <Card className="bg-card border-border"><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">عمولة الشركة</p><p className="text-lg font-bold text-amber-500">{totalCut} ج.م</p></CardContent></Card>
+        <Card className="bg-card border-border"><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">صافي التاجر</p><p className="text-lg font-bold text-primary">{totalNet} ج.م</p></CardContent></Card>
       </div>
 
       <Card className="bg-card border-border">
@@ -140,9 +174,13 @@ export default function MerchantCollections() {
                   <TableHead className="text-right">العميل</TableHead>
                   <TableHead className="text-right">الهاتف</TableHead>
                   <TableHead className="text-right">العنوان</TableHead>
+                  <TableHead className="text-right">المحافظة</TableHead>
                   <TableHead className="text-right">التاجر</TableHead>
                   <TableHead className="text-right">السعر</TableHead>
                   <TableHead className="text-right">الشحن</TableHead>
+                  <TableHead className="text-right">الإجمالي</TableHead>
+                  <TableHead className="text-right">المحصَّل</TableHead>
+                  <TableHead className="text-right">عمولة الشركة</TableHead>
                   <TableHead className="text-right">الصافي</TableHead>
                   <TableHead className="text-right">الحالة</TableHead>
                   <TableHead className="text-right">تاريخ التحصيل</TableHead>
@@ -150,10 +188,8 @@ export default function MerchantCollections() {
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 ? (
-                  <TableRow><TableCell colSpan={12} className="text-center text-muted-foreground py-8">لا توجد بيانات</TableCell></TableRow>
-                ) : filtered.map(o => {
-                  const c = computeNet(o);
-                  return (
+                  <TableRow><TableCell colSpan={16} className="text-center text-muted-foreground py-8">لا توجد بيانات</TableCell></TableRow>
+                ) : rowsWithCalc.map(({ o, gross, companyCut, net, statusName }) => (
                   <TableRow key={o.id} className="border-border">
                     <TableCell><Checkbox checked={selected.has(o.id)} onCheckedChange={() => toggle(o.id)} /></TableCell>
                     <TableCell className="font-mono text-xs">{o.barcode || '-'}</TableCell>
@@ -161,25 +197,26 @@ export default function MerchantCollections() {
                     <TableCell className="text-sm">{o.customer_name}</TableCell>
                     <TableCell dir="ltr" className="text-sm">{o.customer_phone}</TableCell>
                     <TableCell className="text-xs max-w-[220px] truncate" title={o.address}>{o.address || '-'}</TableCell>
+                    <TableCell className="text-xs">{o.governorate || '-'}</TableCell>
                     <TableCell className="text-sm">{getOfficeName(o.office_id)}</TableCell>
                     <TableCell className="text-sm">{o.price} ج.م</TableCell>
-                    <TableCell className="text-sm">
-                      {o.delivery_price} ج.م
-                      {c.isRefused && <span className="block text-[10px] text-amber-600">خصم تعويض: {c.deducted}</span>}
-                    </TableCell>
-                    <TableCell className="text-sm font-bold text-primary">{c.net} ج.م</TableCell>
-                    <TableCell className="text-sm">{(o.order_statuses as any)?.name || '-'}</TableCell>
+                    <TableCell className="text-sm">{o.delivery_price} ج.م</TableCell>
+                    <TableCell className="text-sm font-bold">{computeOrderTotal(o)} ج.م</TableCell>
+                    <TableCell className="text-sm font-bold text-emerald-600">{gross} ج.م</TableCell>
+                    <TableCell className="text-sm text-amber-600">{companyCut} ج.م</TableCell>
+                    <TableCell className="text-sm font-bold text-primary">{net} ج.م</TableCell>
+                    <TableCell className="text-xs">{statusName || '-'}</TableCell>
                     <TableCell className="text-xs">{new Date(o.sender_collected_at).toLocaleString('ar-EG')}</TableCell>
                   </TableRow>
-                ); })}
+                ))}
               </TableBody>
               {filtered.length > 0 && (
                 <TableFooter>
                   <TableRow className="border-border bg-muted/50">
-                    <TableCell colSpan={7} className="font-bold">الإجمالي ({filtered.length})</TableCell>
-                    <TableCell className="font-bold">{totalPrice} ج.م</TableCell>
-                    <TableCell className="font-bold">{totalShipping} ج.م</TableCell>
-                    <TableCell className="font-bold text-primary">{netDue} ج.م</TableCell>
+                    <TableCell colSpan={11} className="font-bold">الإجمالي ({filtered.length})</TableCell>
+                    <TableCell className="font-bold text-emerald-600">{totalGross} ج.م</TableCell>
+                    <TableCell className="font-bold text-amber-600">{totalCut} ج.م</TableCell>
+                    <TableCell className="font-bold text-primary">{totalNet} ج.م</TableCell>
                     <TableCell colSpan={2} />
                   </TableRow>
                 </TableFooter>
