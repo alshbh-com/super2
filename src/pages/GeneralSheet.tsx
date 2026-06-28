@@ -149,7 +149,8 @@ export default function GeneralSheet() {
   const stamp = async (field: 'sender_collected_at' | 'sender_return_received_at', clear: boolean) => {
     if (!selected.size) return toast.error('اختر أوردرات أولاً');
     const value = clear ? null : new Date().toISOString();
-    const { error } = await supabase.from('orders').update({ [field]: value }).in('id', Array.from(selected));
+    const update: any = { [field]: value };
+    const { error } = await supabase.from('orders').update(update).in('id', Array.from(selected));
     if (error) return toast.error(error.message);
     toast.success(clear ? 'تم إلغاء التاريخ' : 'تم تسجيل التاريخ');
     setSelected(new Set()); load();
