@@ -57,7 +57,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { canView } = usePermissions();
-  const [stats, setStats] = useState({ total: 0, open: 0, delivered: 0, returned: 0, todayCount: 0, todayShipping: 0 });
+  const [stats, setStats] = useState({ total: 0, delivered: 0, returned: 0, inProgress: 0, unassigned: 0, todayCount: 0, todayShipping: 0 });
 
   // Chat state
   const [chatOpen, setChatOpen] = useState(false);
