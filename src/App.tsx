@@ -59,8 +59,11 @@ import SystemGuide from "@/pages/SystemGuide";
 import OfficeDailyExpenses from "@/pages/OfficeDailyExpenses";
 import GeneralSheet from "@/pages/GeneralSheet";
 import NotFound from "./pages/NotFound";
+import SystemLock from "./components/SystemLock";
 
 const queryClient = new QueryClient();
+
+const SYSTEM_LOCKED = true;
 
 function LoginRedirect() {
   const { session, loading } = useAuth();
@@ -69,7 +72,10 @@ function LoginRedirect() {
   return <Login />;
 }
 
-const App = () => (
+const App = () => {
+  if (SYSTEM_LOCKED) return <SystemLock />;
+  return (
+
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
@@ -149,6 +155,7 @@ const App = () => (
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;
