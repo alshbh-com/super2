@@ -11,6 +11,7 @@ import { Plus, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { logActivity } from '@/lib/activityLogger';
 import AutocompleteInput from '@/components/AutocompleteInput';
+import { SearchableSelect } from '@/components/SearchableSelect';
 
 interface Props {
   onOrderAdded: () => void;
