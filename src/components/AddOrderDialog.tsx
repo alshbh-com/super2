@@ -298,10 +298,15 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
                   📍 المكتب الحالي: {editOrder.offices.name}
                 </Badge>
               )}
-              <Select value={form.office_id} onValueChange={v => set('office_id', v)} disabled={offices.length === 0}>
-                <SelectTrigger className="bg-secondary border-border"><SelectValue placeholder={offices.length === 0 ? 'جاري التحميل...' : 'اختر مكتب (إجباري)'} /></SelectTrigger>
-                <SelectContent>{offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
-              </Select>
+              <SearchableSelect
+                options={offices.map(o => ({ value: o.id, label: o.name }))}
+                value={form.office_id}
+                onChange={v => set('office_id', v)}
+                placeholder={offices.length === 0 ? 'جاري التحميل...' : 'اختر مكتب (إجباري)'}
+                searchPlaceholder="بحث باسم المكتب..."
+                disabled={offices.length === 0}
+                triggerClassName="w-full"
+              />
             </div>
           </div>
 
