@@ -11,6 +11,7 @@ import { Plus, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { logActivity } from '@/lib/activityLogger';
 import AutocompleteInput from '@/components/AutocompleteInput';
+import { SearchableSelect } from '@/components/SearchableSelect';
 
 interface Props {
   onOrderAdded: () => void;
@@ -27,6 +28,7 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
   const [products, setProducts] = useState<any[]>([]);
   const [statuses, setStatuses] = useState<any[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
+  const [governorates, setGovernorates] = useState<string[]>([]);
 
   // History for autocomplete
   const [history, setHistory] = useState<any[]>([]);
@@ -95,12 +97,15 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
   };
 
   const loadDropdowns = async (orderForEdit?: any) => {
-    const [o, p, s, branchRoles] = await Promise.all([
+    const [o, p, s, branchRoles, gv] = await Promise.all([
       supabase.from('offices').select('id, name').order('name'),
       supabase.from('products').select('id, name, quantity').order('name'),
       supabase.from('order_statuses').select('id, name').order('sort_order'),
       supabase.from('user_roles').select('user_id').eq('role', 'branch'),
+      supabase.from('delivery_prices').select('governorate'),
     ]);
+    const gset = Array.from(new Set((gv.data || []).map((r: any) => String(r.governorate || '').trim()).filter(Boolean))).sort();
+    setGovernorates(gset);
 
     const loadedOffices = o.data || [];
     const currentOfficeId = orderForEdit?.office_id;
@@ -293,10 +298,15 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
                   📍 المكتب الحالي: {editOrder.offices.name}
                 </Badge>
               )}
-              <Select value={form.office_id} onValueChange={v => set('office_id', v)} disabled={offices.length === 0}>
-                <SelectTrigger className="bg-secondary border-border"><SelectValue placeholder={offices.length === 0 ? 'جاري التحميل...' : 'اختر مكتب (إجباري)'} /></SelectTrigger>
-                <SelectContent>{offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
-              </Select>
+              <SearchableSelect
+                options={offices.map(o => ({ value: o.id, label: o.name }))}
+                value={form.office_id}
+                onChange={v => set('office_id', v)}
+                placeholder={offices.length === 0 ? 'جاري التحميل...' : 'اختر مكتب (إجباري)'}
+                searchPlaceholder="بحث باسم المكتب..."
+                disabled={offices.length === 0}
+                triggerClassName="w-full"
+              />
             </div>
           </div>
 
@@ -349,7 +359,15 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
             </div>
             <div className="space-y-2">
               <Label>المحافظة</Label>
-              <Input value={form.governorate} onChange={e => set('governorate', e.target.value)} className="bg-secondary border-border" placeholder="المحافظة" />
+              <SearchableSelect
+                options={governorates.map(g => ({ value: g, label: g }))}
+                value={form.governorate}
+                onChange={v => set('governorate', v)}
+                placeholder={governorates.length === 0 ? 'أضف محافظات من أسعار التوصيل' : 'اختر المحافظة'}
+                searchPlaceholder="بحث عن محافظة..."
+                triggerClassName="w-full"
+              />
+              <p className="text-[10px] text-muted-foreground">القائمة من قسم أسعار التوصيل — عشان يتطابق سعر الشحن تلقائياً.</p>
             </div>
           </div>
 
