@@ -97,12 +97,15 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
   };
 
   const loadDropdowns = async (orderForEdit?: any) => {
-    const [o, p, s, branchRoles] = await Promise.all([
+    const [o, p, s, branchRoles, gv] = await Promise.all([
       supabase.from('offices').select('id, name').order('name'),
       supabase.from('products').select('id, name, quantity').order('name'),
       supabase.from('order_statuses').select('id, name').order('sort_order'),
       supabase.from('user_roles').select('user_id').eq('role', 'branch'),
+      supabase.from('delivery_prices').select('governorate'),
     ]);
+    const gset = Array.from(new Set((gv.data || []).map((r: any) => String(r.governorate || '').trim()).filter(Boolean))).sort();
+    setGovernorates(gset);
 
     const loadedOffices = o.data || [];
     const currentOfficeId = orderForEdit?.office_id;
