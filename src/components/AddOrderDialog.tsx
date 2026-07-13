@@ -359,7 +359,15 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
             </div>
             <div className="space-y-2">
               <Label>المحافظة</Label>
-              <Input value={form.governorate} onChange={e => set('governorate', e.target.value)} className="bg-secondary border-border" placeholder="المحافظة" />
+              <SearchableSelect
+                options={governorates.map(g => ({ value: g, label: g }))}
+                value={form.governorate}
+                onChange={v => set('governorate', v)}
+                placeholder={governorates.length === 0 ? 'أضف محافظات من أسعار التوصيل' : 'اختر المحافظة'}
+                searchPlaceholder="بحث عن محافظة..."
+                triggerClassName="w-full"
+              />
+              <p className="text-[10px] text-muted-foreground">القائمة من قسم أسعار التوصيل — عشان يتطابق سعر الشحن تلقائياً.</p>
             </div>
           </div>
 
