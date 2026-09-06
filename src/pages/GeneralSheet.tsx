@@ -389,7 +389,7 @@ export default function GeneralSheet() {
               {filtered.length > 0 && (
                 <TableFooter>
                   <TableRow className="border-border bg-muted/50">
-                    <TableCell colSpan={7} className="font-bold">الإجمالي ({filtered.length})</TableCell>
+                    <TableCell colSpan={8} className="font-bold">الإجمالي ({filtered.length})</TableCell>
                     <TableCell className="font-bold">{totalPrice} ج.م</TableCell>
                     <TableCell className="font-bold">{totalShipping} ج.م</TableCell>
                     <TableCell className="font-bold text-primary">{grandTotal} ج.م</TableCell>
