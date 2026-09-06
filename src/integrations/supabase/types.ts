@@ -945,6 +945,7 @@ export type Database = {
           id: string
           name: string
           notes: string | null
+          office_id: string | null
           price: number | null
           quantity: number
           updated_at: string
@@ -954,6 +955,7 @@ export type Database = {
           id?: string
           name: string
           notes?: string | null
+          office_id?: string | null
           price?: number | null
           quantity?: number
           updated_at?: string
@@ -963,11 +965,20 @@ export type Database = {
           id?: string
           name?: string
           notes?: string | null
+          office_id?: string | null
           price?: number | null
           quantity?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "products_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "offices"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
