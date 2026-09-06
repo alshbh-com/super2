@@ -352,14 +352,15 @@ export default function GeneralSheet() {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={17} className="text-center py-8 text-muted-foreground">جاري التحميل...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={18} className="text-center py-8 text-muted-foreground">جاري التحميل...</TableCell></TableRow>
                 ) : filtered.length === 0 ? (
-                  <TableRow><TableCell colSpan={17} className="text-center py-8 text-muted-foreground">لا توجد بيانات</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={18} className="text-center py-8 text-muted-foreground">لا توجد بيانات</TableCell></TableRow>
                 ) : filtered.map(o => {
                   const status: any = o.order_statuses;
                   return (
                     <TableRow key={o.id} className="border-border">
                       <TableCell><Checkbox checked={selected.has(o.id)} onCheckedChange={() => toggle(o.id)} /></TableCell>
+                      <TableCell className="text-xs whitespace-nowrap">{fmtDate(effReceived(o))}</TableCell>
                       <TableCell className="font-mono text-xs">{o.barcode || '-'}</TableCell>
                       <TableCell className="text-xs">{o.customer_code || '-'}</TableCell>
                       <TableCell className="text-sm font-medium">{officeName(o.office_id)}</TableCell>
