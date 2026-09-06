@@ -71,54 +71,33 @@ export default function GeneralSheet() {
   const officeName = (id: string) => offices.find(o => o.id === id)?.name || '-';
   const courierName = (id: string) => couriers.find(c => c.id === id)?.full_name || '-';
 
-  const availableReceived = useMemo(() => {
-    const set = new Set<string>();
-    orders.forEach(o => {
-      const d = o.received_at || (o.created_at ? String(o.created_at).slice(0, 10) : null);
-      if (d) set.add(String(d).slice(0, 10));
-    });
-    return Array.from(set).sort().reverse();
-  }, [orders]);
+  /** Effective receipt date: manual received_at, otherwise the creation date. */
+  const effReceived = (o: any): string =>
+    o.received_at ? String(o.received_at).slice(0, 10) : (o.created_at ? String(o.created_at).slice(0, 10) : '');
 
-  const availableSenderCollected = useMemo(() => {
-    const set = new Set<string>();
-    orders.forEach(o => { if (o.sender_collected_at) set.add(String(o.sender_collected_at).slice(0, 10)); });
-    return Array.from(set).sort().reverse();
-  }, [orders]);
+  const dayOf = (v: any): string | null => (v ? String(v).slice(0, 10) : null);
 
-  const availableSenderReturn = useMemo(() => {
-    const set = new Set<string>();
-    orders.forEach(o => { if (o.sender_return_received_at) set.add(String(o.sender_return_received_at).slice(0, 10)); });
-    return Array.from(set).sort().reverse();
-  }, [orders]);
-
-  const matchDateFilter = (filter: string[], available: string[], dateStr: string | null) => {
+  const matchDateFilter = (filter: string[], dateStr: string | null) => {
     if (filter.length === 0) return true;
-    const wantsEmpty = filter.includes(NO_DATE);
-    if (!dateStr) return wantsEmpty;
-    return filter.includes(dateStr) || (wantsEmpty && available.includes(dateStr) === false);
+    if (!dateStr) return filter.includes(NO_DATE);
+    return filter.includes(dateStr);
   };
 
-  const filtered = useMemo(() => {
-    let rows = orders.slice();
-    if (officeFilter.length) rows = rows.filter(o => officeFilter.includes(o.office_id));
-    if (statusFilter.length) rows = rows.filter(o => statusFilter.includes(o.status_id));
-    if (courierFilter.length) rows = rows.filter(o => courierFilter.includes(o.courier_id || ''));
-    if (dateFilter.length) rows = rows.filter(o => {
-      const d = o.received_at || (o.created_at ? String(o.created_at).slice(0, 10) : '');
-      return matchDateFilter(dateFilter, availableReceived, d ? String(d).slice(0, 10) : null);
-    });
-    if (senderCollectedFilter.length) rows = rows.filter(o => {
-      const d = o.sender_collected_at ? String(o.sender_collected_at).slice(0, 10) : null;
-      return matchDateFilter(senderCollectedFilter, availableSenderCollected, d);
-    });
-    if (senderReturnFilter.length) rows = rows.filter(o => {
-      const d = o.sender_return_received_at ? String(o.sender_return_received_at).slice(0, 10) : null;
-      return matchDateFilter(senderReturnFilter, availableSenderReturn, d);
-    });
+  type Key = 'office' | 'status' | 'courier' | 'received' | 'senderCollected' | 'senderReturn' | 'courierCollected';
+
+  /** Apply every active filter except the one being computed → cascading (Excel-like) filters. */
+  const applyFilters = (rows: any[], exclude?: Key) => {
+    let r = rows;
+    if (exclude !== 'office' && officeFilter.length) r = r.filter(o => officeFilter.includes(o.office_id));
+    if (exclude !== 'status' && statusFilter.length) r = r.filter(o => statusFilter.includes(o.status_id));
+    if (exclude !== 'courier' && courierFilter.length) r = r.filter(o => courierFilter.includes(o.courier_id || ''));
+    if (exclude !== 'received' && dateFilter.length) r = r.filter(o => matchDateFilter(dateFilter, effReceived(o) || null));
+    if (exclude !== 'senderCollected' && senderCollectedFilter.length) r = r.filter(o => matchDateFilter(senderCollectedFilter, dayOf(o.sender_collected_at)));
+    if (exclude !== 'senderReturn' && senderReturnFilter.length) r = r.filter(o => matchDateFilter(senderReturnFilter, dayOf(o.sender_return_received_at)));
+    if (exclude !== 'courierCollected' && courierCollectedFilter.length) r = r.filter(o => matchDateFilter(courierCollectedFilter, dayOf(o.courier_collected_at)));
     if (search.trim()) {
       const q = search.trim().toLowerCase();
-      rows = rows.filter(o =>
+      r = r.filter(o =>
         (o.barcode || '').toLowerCase().includes(q) ||
         (o.customer_name || '').toLowerCase().includes(q) ||
         (o.customer_phone || '').includes(q) ||
@@ -126,14 +105,53 @@ export default function GeneralSheet() {
         (o.address || '').toLowerCase().includes(q)
       );
     }
+    return r;
+  };
+
+  const uniqDays = (rows: any[], get: (o: any) => string | null) => {
+    const set = new Set<string>();
+    rows.forEach(o => { const d = get(o); if (d) set.add(d); });
+    return Array.from(set).sort().reverse();
+  };
+
+  // Cascading option lists
+  const availableReceived = useMemo(() => uniqDays(applyFilters(orders, 'received'), o => effReceived(o) || null),
+    [orders, officeFilter, statusFilter, courierFilter, senderCollectedFilter, senderReturnFilter, courierCollectedFilter, search]);
+  const availableSenderCollected = useMemo(() => uniqDays(applyFilters(orders, 'senderCollected'), o => dayOf(o.sender_collected_at)),
+    [orders, officeFilter, statusFilter, courierFilter, dateFilter, senderReturnFilter, courierCollectedFilter, search]);
+  const availableSenderReturn = useMemo(() => uniqDays(applyFilters(orders, 'senderReturn'), o => dayOf(o.sender_return_received_at)),
+    [orders, officeFilter, statusFilter, courierFilter, dateFilter, senderCollectedFilter, courierCollectedFilter, search]);
+  const availableCourierCollected = useMemo(() => uniqDays(applyFilters(orders, 'courierCollected'), o => dayOf(o.courier_collected_at)),
+    [orders, officeFilter, statusFilter, courierFilter, dateFilter, senderCollectedFilter, senderReturnFilter, search]);
+
+  const availableOffices = useMemo(() => {
+    const ids = new Set(applyFilters(orders, 'office').map(o => o.office_id).filter(Boolean));
+    return offices.filter(o => ids.has(o.id));
+  }, [orders, offices, statusFilter, courierFilter, dateFilter, senderCollectedFilter, senderReturnFilter, courierCollectedFilter, search]);
+
+  const availableCouriers = useMemo(() => {
+    const rows = applyFilters(orders, 'courier');
+    const ids = new Set(rows.map(o => o.courier_id || ''));
+    const list = couriers.filter(c => ids.has(c.id)).map(c => ({ value: c.id, label: c.full_name }));
+    return ids.has('') ? [{ value: '', label: 'غير معين' }, ...list] : list;
+  }, [orders, couriers, officeFilter, statusFilter, dateFilter, senderCollectedFilter, senderReturnFilter, courierCollectedFilter, search]);
+
+  const availableStatuses = useMemo(() => {
+    const ids = new Set(applyFilters(orders, 'status').map(o => o.status_id).filter(Boolean));
+    return statuses.filter(s => ids.has(s.id));
+  }, [orders, statuses, officeFilter, courierFilter, dateFilter, senderCollectedFilter, senderReturnFilter, courierCollectedFilter, search]);
+
+  const filtered = useMemo(() => {
+    const rows = applyFilters(orders).slice();
+    // Newest first, then merchant name
     rows.sort((a, b) => {
-      const da = a.received_at || String(a.created_at || '').slice(0, 10);
-      const db = b.received_at || String(b.created_at || '').slice(0, 10);
-      if (da !== db) return da < db ? -1 : 1;
+      const da = effReceived(a);
+      const db = effReceived(b);
+      if (da !== db) return da < db ? 1 : -1;
       return officeName(a.office_id).localeCompare(officeName(b.office_id), 'ar');
     });
     return rows;
-  }, [orders, officeFilter, statusFilter, courierFilter, dateFilter, senderCollectedFilter, senderReturnFilter, search, offices, availableReceived, availableSenderCollected, availableSenderReturn]);
+  }, [orders, officeFilter, statusFilter, courierFilter, dateFilter, senderCollectedFilter, senderReturnFilter, courierCollectedFilter, search, offices]);
 
   const totalPrice = filtered.reduce((s, o) => s + Number(o.price || 0), 0);
   const totalShipping = filtered.reduce((s, o) => s + Number(o.delivery_price || 0), 0);
