@@ -257,19 +257,23 @@ export default function GeneralSheet() {
       <div className="flex flex-wrap gap-3 items-end">
         <div className="space-y-1">
           <Label className="text-xs">التاجر (متعدد)</Label>
-          <MultiSearchableSelect options={offices.map(o => ({ value: o.id, label: o.name }))} value={officeFilter} onChange={setOfficeFilter} placeholder="كل التجار" />
+          <MultiSearchableSelect options={availableOffices.map(o => ({ value: o.id, label: o.name }))} value={officeFilter} onChange={setOfficeFilter} placeholder="كل التجار" />
         </div>
         <div className="space-y-1">
           <Label className="text-xs">المندوب (متعدد)</Label>
-          <MultiSearchableSelect options={[{ value: '', label: 'غير معين' }, ...couriers.map(c => ({ value: c.id, label: c.full_name }))]} value={courierFilter} onChange={setCourierFilter} placeholder="كل المناديب" />
+          <MultiSearchableSelect options={availableCouriers} value={courierFilter} onChange={setCourierFilter} placeholder="كل المناديب" />
         </div>
         <div className="space-y-1">
           <Label className="text-xs">الحالة (متعدد)</Label>
-          <MultiSearchableSelect options={statuses.map(s => ({ value: s.id, label: s.name }))} value={statusFilter} onChange={setStatusFilter} placeholder="كل الحالات" />
+          <MultiSearchableSelect options={availableStatuses.map(s => ({ value: s.id, label: s.name }))} value={statusFilter} onChange={setStatusFilter} placeholder="كل الحالات" />
         </div>
         <div className="space-y-1">
-          <Label className="text-xs">تاريخ الاستلام</Label>
+          <Label className="text-xs">تاريخ استلام الشحنة</Label>
           <MultiDateFilter dates={availableReceived} value={dateFilter} onChange={setDateFilter} />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">تاريخ تحصيل المندوب</Label>
+          <MultiDateFilter dates={[NO_DATE, ...availableCourierCollected]} value={courierCollectedFilter} onChange={setCourierCollectedFilter} placeholder="كل التواريخ + الفارغ" />
         </div>
         <div className="space-y-1">
           <Label className="text-xs">تاريخ تحصيل التاجر</Label>
@@ -286,6 +290,12 @@ export default function GeneralSheet() {
             <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="باركود / اسم / هاتف / عنوان" className="w-56 pr-8 bg-secondary border-border" />
           </div>
         </div>
+        {(officeFilter.length || statusFilter.length || courierFilter.length || dateFilter.length || senderCollectedFilter.length || senderReturnFilter.length || courierCollectedFilter.length || search) ? (
+          <Button variant="outline" size="sm" onClick={() => {
+            setOfficeFilter([]); setStatusFilter([]); setCourierFilter([]); setDateFilter([]);
+            setSenderCollectedFilter([]); setSenderReturnFilter([]); setCourierCollectedFilter([]); setSearch('');
+          }}>مسح الفلاتر</Button>
+        ) : null}
       </div>
 
       {selected.size > 0 && (
