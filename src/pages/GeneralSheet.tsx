@@ -231,6 +231,7 @@ export default function GeneralSheet() {
             ],
           }}
           columns={[
+            { key: 'received_at', label: 'تاريخ استلام الشحنة', format: (_: any, r: any) => fmtDate(effReceived(r)) },
             { key: 'barcode', label: 'الباركود' },
             { key: 'customer_code', label: 'كود الراسل' },
             { key: 'office_id', label: 'الراسل', format: (v) => officeName(v) },
