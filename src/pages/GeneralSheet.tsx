@@ -331,6 +331,7 @@ export default function GeneralSheet() {
               <TableHeader>
                 <TableRow className="border-border">
                   <TableHead className="w-10"><Checkbox checked={selected.size > 0 && selected.size === filtered.length} onCheckedChange={toggleAll} /></TableHead>
+                  <TableHead className="text-right">تاريخ استلام الشحنة</TableHead>
                   <TableHead className="text-right">الباركود</TableHead>
                   <TableHead className="text-right">كود الراسل</TableHead>
                   <TableHead className="text-right">الراسل</TableHead>
