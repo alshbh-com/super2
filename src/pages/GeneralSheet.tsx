@@ -33,6 +33,7 @@ export default function GeneralSheet() {
   const [dateFilter, setDateFilter] = useState<string[]>([]);                 // received_at
   const [senderCollectedFilter, setSenderCollectedFilter] = useState<string[]>([]);
   const [senderReturnFilter, setSenderReturnFilter] = useState<string[]>([]);
+  const [courierCollectedFilter, setCourierCollectedFilter] = useState<string[]>([]);
   const [search, setSearch] = useState('');
 
   // edit status dialog
