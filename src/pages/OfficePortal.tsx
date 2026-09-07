@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 export default function OfficePortal() {
   const { user, logout } = useAuth();
   const [orders, setOrders] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
   const [statuses, setStatuses] = useState<any[]>([]);
   const [officeName, setOfficeName] = useState('');
   const [officeId, setOfficeId] = useState<string | null>(null);
