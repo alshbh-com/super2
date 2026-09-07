@@ -380,13 +380,14 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>المنتج (اختيار من القائمة)</Label>
-              <Select value={form.product_id} onValueChange={handleProductSelect}>
-                <SelectTrigger className="bg-secondary border-border"><SelectValue placeholder="اختر منتج" /></SelectTrigger>
-                <SelectContent>
-                  {products.map(p => <SelectItem key={p.id} value={p.id}>{p.name} ({p.quantity} متاح)</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Label>المنتج (منتجات التاجر المحدد)</Label>
+              <SearchableSelect
+                options={products.filter(p => !form.office_id || p.office_id === form.office_id).map(p => ({ value: p.id, label: `${p.name} (${p.quantity})` }))}
+                value={form.product_id}
+                onChange={handleProductSelect}
+                placeholder={form.office_id ? 'اختر منتج' : 'اختر التاجر أولاً'}
+                triggerClassName="w-full"
+              />
             </div>
             <div className="space-y-2">
               <Label>أو اكتب اسم المنتج</Label>
