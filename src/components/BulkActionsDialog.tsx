@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import { logActivity } from '@/lib/activityLogger';
+import { SearchableSelect } from '@/components/SearchableSelect';
 import { Lock, Undo2, UserPlus, UserMinus, FileSpreadsheet, FileText, Printer, Tag } from 'lucide-react';
 
 interface OrderLite {
@@ -120,7 +121,7 @@ export default function BulkActionsDialog({ open, onOpenChange, orders, sessionI
     label: string,
   ) => {
     setBusy(true);
-    const { error } = await supabase.from('orders').update({ [field]: new Date().toISOString() }).in('id', ids);
+    const { error } = await supabase.from('orders').update({ [field]: new Date().toISOString() } as any).in('id', ids);
     setBusy(false);
     if (error) return toast.error('فشل التسجيل');
     await logActivity('bulk_stamp_date', { session_id: sessionId, count: ids.length, field });
