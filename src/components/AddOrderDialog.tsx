@@ -237,12 +237,7 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
         const { data: inserted, error } = await supabase.from('orders').insert(orderData).select('barcode').single();
         if (error) throw error;
 
-        if (form.product_id && qty > 0) {
-          const product = products.find(p => p.id === form.product_id);
-          if (product) {
-            await supabase.from('products').update({ quantity: Math.max(0, product.quantity - qty) }).eq('id', form.product_id);
-          }
-        }
+        // المخزون المتاح بيتحسب تلقائي (إجمالي المخزون − المنفذ − قيد التوصيل)
         logActivity('إضافة أوردر جديد', { customer: orderData.customer_name, barcode: inserted?.barcode });
         toast.success('تم إضافة الأوردر بنجاح');
       }
