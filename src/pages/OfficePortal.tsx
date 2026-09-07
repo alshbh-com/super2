@@ -172,14 +172,55 @@ export default function OfficePortal() {
         </div>
 
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="grid grid-cols-3 w-full">
+          <TabsList className="grid grid-cols-4 w-full">
             <TabsTrigger value="open">أوردرات لم تتقفل ({openOrders.length})</TabsTrigger>
             <TabsTrigger value="collected">تم التحصيل ({collectedOrders.length})</TabsTrigger>
             <TabsTrigger value="returned">تم المرتجع ({returnedOrders.length})</TabsTrigger>
+            <TabsTrigger value="stock">المنتجات والمخزون ({products.length})</TabsTrigger>
           </TabsList>
           <TabsContent value="open">{renderTable(openOrders)}</TabsContent>
           <TabsContent value="collected">{renderTable(collectedOrders, 'sender_collected_at', 'تاريخ التحصيل')}</TabsContent>
           <TabsContent value="returned">{renderTable(returnedOrders, 'sender_return_received_at', 'تاريخ رجوع المرتجع')}</TabsContent>
+          <TabsContent value="stock">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+              <Card className="bg-card border-border"><CardContent className="p-4">
+                <div className="text-xs text-muted-foreground">منفذ</div>
+                <div className="text-2xl font-bold text-foreground">{stockStats.delivered}</div>
+              </CardContent></Card>
+              <Card className="bg-card border-border"><CardContent className="p-4">
+                <div className="text-xs text-muted-foreground">قيد التوصيل</div>
+                <div className="text-2xl font-bold text-foreground">{stockStats.inTransit}</div>
+              </CardContent></Card>
+              <Card className="bg-card border-border"><CardContent className="p-4">
+                <div className="text-xs text-muted-foreground">متاح بالمخزن (إجمالي {stockStats.total})</div>
+                <div className="text-2xl font-bold text-foreground">{stockStats.available}</div>
+              </CardContent></Card>
+            </div>
+            <Card className="bg-card border-border">
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-border">
+                      <TableHead className="text-right">المنتج</TableHead>
+                      <TableHead className="text-right">عدد القطع</TableHead>
+                      <TableHead className="text-right">تاريخ الاستلام</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {products.length === 0 ? (
+                      <TableRow><TableCell colSpan={3} className="text-center py-8 text-muted-foreground">لا يوجد مخزون مسجل</TableCell></TableRow>
+                    ) : products.map(p => (
+                      <TableRow key={p.id} className="border-border">
+                        <TableCell className="font-medium">{p.name}</TableCell>
+                        <TableCell>{p.quantity}</TableCell>
+                        <TableCell className="text-xs">{p.created_at ? new Date(p.created_at).toLocaleDateString('ar-EG') : '-'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
     </div>
