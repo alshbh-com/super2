@@ -99,7 +99,7 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
   const loadDropdowns = async (orderForEdit?: any) => {
     const [o, p, s, branchRoles, gv] = await Promise.all([
       supabase.from('offices').select('id, name').order('name'),
-      supabase.from('products').select('id, name, quantity').order('name'),
+      supabase.from('products').select('id, name, quantity, office_id').order('name'),
       supabase.from('order_statuses').select('id, name').order('sort_order'),
       supabase.from('user_roles').select('user_id').eq('role', 'branch'),
       supabase.from('delivery_prices').select('governorate'),
@@ -237,12 +237,7 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
         const { data: inserted, error } = await supabase.from('orders').insert(orderData).select('barcode').single();
         if (error) throw error;
 
-        if (form.product_id && qty > 0) {
-          const product = products.find(p => p.id === form.product_id);
-          if (product) {
-            await supabase.from('products').update({ quantity: Math.max(0, product.quantity - qty) }).eq('id', form.product_id);
-          }
-        }
+        // المخزون المتاح بيتحسب تلقائي (إجمالي المخزون − المنفذ − قيد التوصيل)
         logActivity('إضافة أوردر جديد', { customer: orderData.customer_name, barcode: inserted?.barcode });
         toast.success('تم إضافة الأوردر بنجاح');
       }
@@ -385,13 +380,14 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>المنتج (اختيار من القائمة)</Label>
-              <Select value={form.product_id} onValueChange={handleProductSelect}>
-                <SelectTrigger className="bg-secondary border-border"><SelectValue placeholder="اختر منتج" /></SelectTrigger>
-                <SelectContent>
-                  {products.map(p => <SelectItem key={p.id} value={p.id}>{p.name} ({p.quantity} متاح)</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Label>المنتج (منتجات التاجر المحدد)</Label>
+              <SearchableSelect
+                options={products.filter(p => !form.office_id || p.office_id === form.office_id).map(p => ({ value: p.id, label: `${p.name} (${p.quantity})` }))}
+                value={form.product_id}
+                onChange={handleProductSelect}
+                placeholder={form.office_id ? 'اختر منتج' : 'اختر التاجر أولاً'}
+                triggerClassName="w-full"
+              />
             </div>
             <div className="space-y-2">
               <Label>أو اكتب اسم المنتج</Label>

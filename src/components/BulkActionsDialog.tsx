@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import { logActivity } from '@/lib/activityLogger';
+import { SearchableSelect } from '@/components/SearchableSelect';
 import { Lock, Undo2, UserPlus, UserMinus, FileSpreadsheet, FileText, Printer, Tag } from 'lucide-react';
 
 interface OrderLite {
@@ -115,6 +116,18 @@ export default function BulkActionsDialog({ open, onOpenChange, orders, sessionI
     toast.success('تم إلغاء التعيين');
   };
 
+  const stampDate = async (
+    field: 'courier_collected_at' | 'courier_return_received_at' | 'sender_collected_at' | 'sender_return_received_at',
+    label: string,
+  ) => {
+    setBusy(true);
+    const { error } = await supabase.from('orders').update({ [field]: new Date().toISOString() } as any).in('id', ids);
+    setBusy(false);
+    if (error) return toast.error('فشل التسجيل');
+    await logActivity('bulk_stamp_date', { session_id: sessionId, count: ids.length, field });
+    toast.success(`تم تسجيل ${label} لعدد ${ids.length} أوردر`);
+  };
+
   const exportExcel = () => {
     const rows = orders.map(o => ({
       الباركود: o.barcode || o.tracking_id || '',
@@ -178,14 +191,25 @@ export default function BulkActionsDialog({ open, onOpenChange, orders, sessionI
           <div className="border rounded-md p-3 space-y-2">
             <Label className="font-semibold">المندوب</Label>
             <div className="flex gap-2 flex-wrap">
-              <Select value={newCourierId} onValueChange={setNewCourierId}>
-                <SelectTrigger className="min-w-[200px]"><SelectValue placeholder="اختر مندوب" /></SelectTrigger>
-                <SelectContent>
-                  {couriers.map(c => <SelectItem key={c.id} value={c.id}>{c.full_name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <SearchableSelect
+                options={couriers.map(c => ({ value: c.id, label: c.full_name }))}
+                value={newCourierId}
+                onChange={setNewCourierId}
+                placeholder="ابحث عن مندوب"
+                triggerClassName="min-w-[220px]"
+              />
               <Button onClick={assignCourier} disabled={busy}><UserPlus className="h-4 w-4 ml-1" />تعيين</Button>
               <Button variant="outline" onClick={unassignCourier} disabled={busy}><UserMinus className="h-4 w-4 ml-1" />إلغاء التعيين</Button>
+            </div>
+          </div>
+
+          <div className="border rounded-md p-3 space-y-2">
+            <Label className="font-semibold">تسجيل التواريخ</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant="outline" disabled={busy} onClick={() => stampDate('courier_collected_at', 'تحصيل المندوب')}>تحصيل المندوب اليوم</Button>
+              <Button variant="outline" disabled={busy} onClick={() => stampDate('courier_return_received_at', 'مرتجع المندوب')}>مرتجع المندوب اليوم</Button>
+              <Button variant="outline" disabled={busy} onClick={() => stampDate('sender_collected_at', 'تحصيل التاجر')}>تحصيل التاجر اليوم</Button>
+              <Button variant="outline" disabled={busy} onClick={() => stampDate('sender_return_received_at', 'مرتجع التاجر')}>مرتجع التاجر اليوم</Button>
             </div>
           </div>
 
