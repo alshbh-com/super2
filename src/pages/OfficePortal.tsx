@@ -50,12 +50,12 @@ export default function OfficePortal() {
   }, [officeId]);
 
   const loadOrdersOnly = async (oid: string) => {
-    const { data: ords } = await supabase
-      .from('orders')
-      .select('*')
-      .eq('office_id', oid)
-      .order('created_at', { ascending: false });
+    const [{ data: ords }, { data: prods }] = await Promise.all([
+      supabase.from('orders').select('*').eq('office_id', oid).order('created_at', { ascending: false }),
+      supabase.from('products').select('id, name, quantity, created_at').eq('office_id', oid).order('created_at', { ascending: false }),
+    ]);
     setOrders(ords || []);
+    setProducts(prods || []);
   };
 
   const loadData = async () => {
