@@ -115,6 +115,18 @@ export default function BulkActionsDialog({ open, onOpenChange, orders, sessionI
     toast.success('تم إلغاء التعيين');
   };
 
+  const stampDate = async (
+    field: 'courier_collected_at' | 'courier_return_received_at' | 'sender_collected_at' | 'sender_return_received_at',
+    label: string,
+  ) => {
+    setBusy(true);
+    const { error } = await supabase.from('orders').update({ [field]: new Date().toISOString() }).in('id', ids);
+    setBusy(false);
+    if (error) return toast.error('فشل التسجيل');
+    await logActivity('bulk_stamp_date', { session_id: sessionId, count: ids.length, field });
+    toast.success(`تم تسجيل ${label} لعدد ${ids.length} أوردر`);
+  };
+
   const exportExcel = () => {
     const rows = orders.map(o => ({
       الباركود: o.barcode || o.tracking_id || '',
