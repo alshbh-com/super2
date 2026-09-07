@@ -99,6 +99,20 @@ export default function OfficePortal() {
   const collectedOrders = orders.filter(o => !!o.sender_collected_at);
   const returnedOrders = orders.filter(o => !!o.sender_return_received_at);
 
+  const DELIVERED_ST = ['تم التسليم', 'تسليم جزئي', 'استلم ودفع نص الشحن'];
+  const CLOSED_OUT_ST = ['مرتجع', 'ملغي', 'مرتجع لم يدفع شحن', 'رفض ودفع شحن', 'رفض دفع شحن'];
+  const stockStats = (() => {
+    let delivered = 0, inTransit = 0;
+    orders.forEach(o => {
+      const st = getStatusName(o.status_id);
+      const qty = Number(o.quantity || 1);
+      if (DELIVERED_ST.includes(st)) delivered += qty;
+      else if (!CLOSED_OUT_ST.includes(st) && !o.is_closed) inTransit += qty;
+    });
+    const total = products.reduce((s, p) => s + Number(p.quantity || 0), 0);
+    return { delivered, inTransit, total, available: total - (delivered + inTransit) };
+  })();
+
   const renderTable = (rows: any[], dateField?: 'sender_collected_at' | 'sender_return_received_at', dateLabel?: string) => (
     <Card className="bg-card border-border">
       <CardContent className="p-0">
