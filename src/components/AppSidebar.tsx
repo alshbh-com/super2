@@ -30,7 +30,7 @@ const mainItems = [
 const managementItems = [
   { title: 'المكاتب', url: '/offices', icon: Building2 },
   { title: 'أسعار التوصيل', url: '/delivery-prices', icon: MapPin },
-  { title: 'المنتجات', url: '/products', icon: Box },
+  { title: 'المنتجات والمخزون', url: '/products', icon: Box },
   { title: 'العملاء', url: '/customers', icon: Contact },
   { title: 'المندوبين', url: '/couriers', icon: Truck },
   { title: 'المستخدمين', url: '/users', icon: Users },
