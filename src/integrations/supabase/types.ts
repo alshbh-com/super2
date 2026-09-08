@@ -557,9 +557,10 @@ export type Database = {
           created_at: string
           created_by: string | null
           expense_date: string
+          expense_type: string
           id: string
           notes: string | null
-          office_id: string
+          office_id: string | null
         }
         Insert: {
           amount?: number
@@ -567,9 +568,10 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           expense_date?: string
+          expense_type?: string
           id?: string
           notes?: string | null
-          office_id: string
+          office_id?: string | null
         }
         Update: {
           amount?: number
@@ -577,9 +579,10 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           expense_date?: string
+          expense_type?: string
           id?: string
           notes?: string | null
-          office_id?: string
+          office_id?: string | null
         }
         Relationships: [
           {

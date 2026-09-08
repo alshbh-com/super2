@@ -117,7 +117,7 @@ export default function Advances() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl sm:text-2xl font-bold">السلفات والخصومات</h1>
+      <h1 className="text-xl sm:text-2xl font-bold">رواتب موظفين</h1>
 
       <div className="flex flex-wrap gap-3 items-end">
         <div className="space-y-1">

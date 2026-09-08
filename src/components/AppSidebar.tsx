@@ -44,8 +44,8 @@ const accountingItems = [
   { title: 'حسابات المكاتب', url: '/office-accounts', icon: Building },
   { title: 'تحصيلات التاجر', url: '/merchant-collections', icon: Wallet },
   { title: 'مرتجعات التاجر', url: '/merchant-returns', icon: Archive },
-  { title: 'مصاريف المكتب اليومية', url: '/office-daily-expenses', icon: Receipt },
-  { title: 'السلفات والخصومات', url: '/advances', icon: DollarSign },
+  { title: 'مصروف الشركة', url: '/office-daily-expenses', icon: Receipt },
+  { title: 'رواتب موظفين', url: '/advances', icon: DollarSign },
 ];
 
 const reportsItems = [
