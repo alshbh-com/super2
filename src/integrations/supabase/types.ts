@@ -192,6 +192,42 @@ export type Database = {
           },
         ]
       }
+      contacts: {
+        Row: {
+          address: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       courier_bonuses: {
         Row: {
           amount: number
