@@ -31,15 +31,48 @@ export default function Couriers() {
   const [editDialog, setEditDialog] = useState<any | null>(null);
   const [editForm, setEditForm] = useState({ full_name: '', phone: '', address: '', coverage_areas: '', notes: '' });
 
+  const [stats, setStats] = useState<Record<string, { inProgress: number; total: number; lastOrder: string | null }>>({});
+
   useEffect(() => { loadCouriers(); }, []);
 
   const loadCouriers = async () => {
     const { data: roles } = await supabase.from('user_roles').select('user_id').eq('role', 'courier');
     if (roles && roles.length > 0) {
-      const { data: profiles } = await supabase.from('profiles').select('*').in('id', roles.map(r => r.user_id));
+      const ids = roles.map(r => r.user_id);
+      const { data: profiles } = await supabase.from('profiles').select('*').in('id', ids);
       setCouriers(profiles || []);
+      const { data: ords } = await supabase
+        .from('orders')
+        .select('courier_id, is_closed, is_courier_closed, created_at')
+        .in('courier_id', ids)
+        .limit(5000);
+      const map: Record<string, { inProgress: number; total: number; lastOrder: string | null }> = {};
+      (ords || []).forEach((o: any) => {
+        const cur = map[o.courier_id] || { inProgress: 0, total: 0, lastOrder: null };
+        cur.total++;
+        if (!o.is_closed && !o.is_courier_closed) cur.inProgress++;
+        if (!cur.lastOrder || o.created_at > cur.lastOrder) cur.lastOrder = o.created_at;
+        map[o.courier_id] = cur;
+      });
+      setStats(map);
     }
   };
+
+  const isActive = (id: string) => {
+    const last = stats[id]?.lastOrder;
+    if (!last) return false;
+    return (Date.now() - new Date(last).getTime()) / 86400000 <= 15;
+  };
+
+  const sortedCouriers = [...couriers].sort((a, b) => {
+    const act = Number(isActive(b.id)) - Number(isActive(a.id));
+    if (act !== 0) return act;
+    return (stats[b.id]?.inProgress || 0) - (stats[a.id]?.inProgress || 0);
+  });
+
+  const activeCount = couriers.filter(c => isActive(c.id)).length;
+  const idleCount = couriers.length - activeCount;
+
 
   useEffect(() => { if (selectedCourier) loadCourierOrders(); }, [selectedCourier]);
 
