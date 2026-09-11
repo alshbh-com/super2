@@ -40,12 +40,24 @@ export default function CourierCollections() {
   const [closureDate, setClosureDate] = useState(new Date().toISOString().split('T')[0]);
   const [closedOrdersOnDate, setClosedOrdersOnDate] = useState<any[]>([]);
 
+  const [openCounts, setOpenCounts] = useState<Record<string, number>>({});
+  const [closureDays, setClosureDays] = useState<string[]>([]);
+
   useEffect(() => {
     const load = async () => {
       const { data: roles } = await supabase.from('user_roles').select('user_id').eq('role', 'courier');
       if (roles && roles.length > 0) {
-        const { data: profiles } = await supabase.from('profiles').select('id, full_name, commission_amount, rejection_commission').in('id', roles.map(r => r.user_id));
+        const { data: profiles } = await supabase.from('profiles').select('id, full_name, phone, commission_amount, rejection_commission').in('id', roles.map(r => r.user_id));
         setCouriers(profiles || []);
+        const { data: openOrders } = await supabase
+          .from('orders')
+          .select('courier_id')
+          .eq('is_courier_closed', false)
+          .in('courier_id', roles.map(r => r.user_id))
+          .limit(5000);
+        const counts: Record<string, number> = {};
+        (openOrders || []).forEach((o: any) => { counts[o.courier_id] = (counts[o.courier_id] || 0) + 1; });
+        setOpenCounts(counts);
       }
       const { data: sts } = await supabase.from('order_statuses').select('*').order('sort_order');
       setStatuses(sts || []);
@@ -54,6 +66,28 @@ export default function CourierCollections() {
     };
     load();
   }, []);
+
+  // Smart closure days — only days where this courier actually has closed orders
+  useEffect(() => {
+    if (!selectedCourier) { setClosureDays([]); return; }
+    (async () => {
+      const { data } = await supabase
+        .from('orders')
+        .select('closed_at, updated_at')
+        .eq('courier_id', selectedCourier)
+        .eq('is_courier_closed', true)
+        .limit(3000);
+      const set = new Set<string>();
+      (data || []).forEach((o: any) => {
+        const d = String(o.closed_at || o.updated_at || '').slice(0, 10);
+        if (d) set.add(d);
+      });
+      const list = Array.from(set).sort((a, b) => b.localeCompare(a));
+      setClosureDays(list);
+      if (list.length > 0) setClosureDate(list[0]);
+    })();
+  }, [selectedCourier]);
+
 
   // Auto-select commission-eligible statuses when statuses load
   const COMMISSION_STATUS_NAMES = ['تم التسليم', 'تسليم جزئي', 'رفض ودفع شحن', 'استلم ودفع نص الشحن'];
