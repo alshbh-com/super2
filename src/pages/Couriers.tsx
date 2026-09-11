@@ -152,6 +152,25 @@ export default function Couriers() {
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">المندوبين</h1>
 
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+        <Card className="bg-card border-border"><CardContent className="p-3 text-center">
+          <p className="text-xs text-muted-foreground">إجمالي المناديب</p>
+          <p className="text-2xl font-bold">{couriers.length}</p>
+        </CardContent></Card>
+        <Card className="bg-emerald-50 border-emerald-200"><CardContent className="p-3 text-center">
+          <p className="text-xs text-emerald-700">نشط</p>
+          <p className="text-2xl font-bold text-emerald-700">{activeCount}</p>
+        </CardContent></Card>
+        <Card className="bg-slate-50 border-slate-200"><CardContent className="p-3 text-center">
+          <p className="text-xs text-slate-600">خامل (15 يوم بدون أوردرات)</p>
+          <p className="text-2xl font-bold text-slate-600">{idleCount}</p>
+        </CardContent></Card>
+        <Card className="bg-amber-50 border-amber-200"><CardContent className="p-3 text-center">
+          <p className="text-xs text-amber-700">أوردرات قيد التنفيذ</p>
+          <p className="text-2xl font-bold text-amber-700">{Object.values(stats).reduce((s, v) => s + v.inProgress, 0)}</p>
+        </CardContent></Card>
+      </div>
+
       <Card className="bg-card border-border">
         <CardContent className="p-0">
           <Table>
@@ -159,24 +178,28 @@ export default function Couriers() {
               <TableRow className="border-border">
                 <TableHead className="text-right">الاسم</TableHead>
                 <TableHead className="text-right">الهاتف</TableHead>
-                <TableHead className="text-right">العنوان</TableHead>
+                <TableHead className="text-right">قيد التنفيذ</TableHead>
+                <TableHead className="text-right">حالة النشاط</TableHead>
                 <TableHead className="text-right">مناطق التغطية</TableHead>
                 <TableHead className="text-right">ملاحظات</TableHead>
-                <TableHead className="text-right">الحالة</TableHead>
                 <TableHead className="text-right">إجراء</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {couriers.length === 0 ? (
+              {sortedCouriers.length === 0 ? (
                 <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">لا يوجد مندوبين</TableCell></TableRow>
-              ) : couriers.map(c => (
+              ) : sortedCouriers.map(c => (
                 <TableRow key={c.id} className={`border-border ${selectedCourier === c.id ? 'bg-secondary' : ''}`}>
                   <TableCell className="font-medium">{c.full_name}</TableCell>
                   <TableCell dir="ltr">{c.phone || '-'}</TableCell>
-                  <TableCell>{c.address || '-'}</TableCell>
+                  <TableCell className="font-bold text-amber-600">{stats[c.id]?.inProgress || 0}</TableCell>
+                  <TableCell>
+                    <Badge className={isActive(c.id) ? 'bg-emerald-600 text-white' : 'bg-slate-400 text-white'}>
+                      {isActive(c.id) ? 'نشط' : 'خامل'}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="max-w-32 truncate">{c.coverage_areas || '-'}</TableCell>
                   <TableCell className="max-w-32 truncate">{c.notes || '-'}</TableCell>
-                  <TableCell><Badge variant={c.is_active ? 'default' : 'secondary'}>{c.is_active ? 'نشط' : 'غير نشط'}</Badge></TableCell>
                   <TableCell>
                     <div className="flex gap-1">
                       <Button size="sm" variant={selectedCourier === c.id ? 'default' : 'outline'} onClick={() => setSelectedCourier(c.id)}>
@@ -187,6 +210,7 @@ export default function Couriers() {
                   </TableCell>
                 </TableRow>
               ))}
+
             </TableBody>
           </Table>
         </CardContent>
