@@ -14,6 +14,7 @@ import { logActivity } from '@/lib/activityLogger';
 
 export default function Offices() {
   const [offices, setOffices] = useState<any[]>([]);
+  const [officeStats, setOfficeStats] = useState<Record<string, { total: number; last: string | null }>>({});
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', specialty: '', owner_name: '', owner_phone: '', address: '', notes: '', office_commission: '', return_shipping_compensation: '' });
@@ -23,7 +24,32 @@ export default function Offices() {
   const load = async () => {
     const { data } = await supabase.from('offices').select('*').order('created_at', { ascending: false });
     setOffices(data || []);
+    const { data: ords } = await supabase.from('orders').select('office_id, created_at').limit(5000);
+    const map: Record<string, { total: number; last: string | null }> = {};
+    (ords || []).forEach((o: any) => {
+      if (!o.office_id) return;
+      const cur = map[o.office_id] || { total: 0, last: null };
+      cur.total++;
+      if (!cur.last || o.created_at > cur.last) cur.last = o.created_at;
+      map[o.office_id] = cur;
+    });
+    setOfficeStats(map);
   };
+
+  const isActive = (id: string) => {
+    const last = officeStats[id]?.last;
+    if (!last) return false;
+    return (Date.now() - new Date(last).getTime()) / 86400000 <= 15;
+  };
+
+  const sortedOffices = [...offices].sort((a, b) => {
+    const act = Number(isActive(b.id)) - Number(isActive(a.id));
+    if (act !== 0) return act;
+    return (officeStats[b.id]?.total || 0) - (officeStats[a.id]?.total || 0);
+  });
+
+  const activeCount = offices.filter(o => isActive(o.id)).length;
+
 
   const set = (key: string, value: string) => setForm(f => ({ ...f, [key]: value }));
   const resetForm = () => setForm({ name: '', specialty: '', owner_name: '', owner_phone: '', address: '', notes: '', office_commission: '', return_shipping_compensation: '' });
