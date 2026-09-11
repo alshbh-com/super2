@@ -15,6 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activityLogger';
 // Note: any order assigned to a courier can be closed regardless of its status
 import { ReportButton } from '@/components/ReportButton';
+import { SearchableSelect } from '@/components/SearchableSelect';
 
 const formatDateTime = (value?: string | null) => value ? new Date(value).toLocaleString('ar-EG') : '-';
 
