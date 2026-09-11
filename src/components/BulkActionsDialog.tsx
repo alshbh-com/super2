@@ -97,12 +97,17 @@ export default function BulkActionsDialog({ open, onOpenChange, orders, sessionI
 
   const returnAll = async () => {
     setBusy(true);
-    const { error } = await supabase.from('orders').update({ returned_to_sender: true }).in('id', ids);
+    const now = new Date().toISOString();
+    const { error } = await supabase
+      .from('orders')
+      .update({ returned_to_sender: true, sender_return_received_at: now } as any)
+      .in('id', ids);
     setBusy(false);
     if (error) return toast.error('فشل التحديث');
-    await logActivity('bulk_return_to_sender', { session_id: sessionId, count: ids.length });
-    toast.success(`تم تعليم ${ids.length} كمرتجع للراسل`);
+    await logActivity('bulk_return_to_sender', { session_id: sessionId, count: ids.length, sender_return_received_at: now });
+    toast.success(`تم تعليم ${ids.length} كمرتجع للراسل مع تسجيل تاريخ الرجوع`);
   };
+
 
   const assignCourier = async () => {
     if (!newCourierId) { toast.error('اختر مندوب'); return; }
