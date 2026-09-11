@@ -307,12 +307,19 @@ export default function CourierCollections() {
 
       <div className="flex flex-wrap gap-3 items-end justify-between">
         <div className="space-y-1">
-          <Label className="text-xs">المندوب</Label>
-          <Select value={selectedCourier} onValueChange={setSelectedCourier}>
-            <SelectTrigger className="w-48 bg-secondary border-border"><SelectValue placeholder="اختر مندوب" /></SelectTrigger>
-            <SelectContent>{couriers.map(c => <SelectItem key={c.id} value={c.id}>{c.full_name}</SelectItem>)}</SelectContent>
-          </Select>
+          <Label className="text-xs">المندوب (اللي عندهم أوردرات مفتوحة)</Label>
+          <SearchableSelect
+            options={couriers
+              .filter(c => (openCounts[c.id] || 0) > 0 || c.id === selectedCourier)
+              .sort((a, b) => (openCounts[b.id] || 0) - (openCounts[a.id] || 0))
+              .map(c => ({ value: c.id, label: `${c.full_name} (${openCounts[c.id] || 0})` }))}
+            value={selectedCourier}
+            onChange={setSelectedCourier}
+            placeholder="ابحث باسم المندوب"
+            triggerClassName="w-64"
+          />
         </div>
+
         {selectedCourier && orders.length > 0 && (() => {
           const courier = couriers.find(c => c.id === selectedCourier);
           const duesColumns = [
