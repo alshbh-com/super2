@@ -125,6 +125,25 @@ export default function Offices() {
           </DialogContent>
         </Dialog>
       </div>
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+        <Card className="bg-card border-border"><CardContent className="p-3 text-center">
+          <p className="text-xs text-muted-foreground">إجمالي التجار</p>
+          <p className="text-2xl font-bold">{offices.length}</p>
+        </CardContent></Card>
+        <Card className="bg-emerald-50 border-emerald-200"><CardContent className="p-3 text-center">
+          <p className="text-xs text-emerald-700">نشط</p>
+          <p className="text-2xl font-bold text-emerald-700">{activeCount}</p>
+        </CardContent></Card>
+        <Card className="bg-slate-50 border-slate-200"><CardContent className="p-3 text-center">
+          <p className="text-xs text-slate-600">خامل (15 يوم بدون أوردرات)</p>
+          <p className="text-2xl font-bold text-slate-600">{offices.length - activeCount}</p>
+        </CardContent></Card>
+        <Card className="bg-amber-50 border-amber-200"><CardContent className="p-3 text-center">
+          <p className="text-xs text-amber-700">إجمالي الأوردرات</p>
+          <p className="text-2xl font-bold text-amber-700">{Object.values(officeStats).reduce((s, v) => s + v.total, 0)}</p>
+        </CardContent></Card>
+      </div>
+
       <Card className="bg-card border-border">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -132,6 +151,8 @@ export default function Offices() {
               <TableHeader>
                 <TableRow className="border-border">
                   <TableHead className="text-right">اسم المكتب</TableHead>
+                  <TableHead className="text-right">حالة التاجر</TableHead>
+                  <TableHead className="text-right">أوردرات</TableHead>
                   <TableHead className="text-right">صاحب المكتب</TableHead>
                   <TableHead className="text-right">الهاتف</TableHead>
                   <TableHead className="text-right">التخصص</TableHead>
@@ -141,13 +162,20 @@ export default function Offices() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {offices.map((o) => (
+                {sortedOffices.map((o) => (
                   <TableRow key={o.id} className="border-border">
                     <TableCell className="font-medium">{o.name}</TableCell>
+                    <TableCell>
+                      <Badge className={isActive(o.id) ? 'bg-emerald-600 text-white' : 'bg-slate-400 text-white'}>
+                        {isActive(o.id) ? 'نشط' : 'خامل'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-bold">{officeStats[o.id]?.total || 0}</TableCell>
                     <TableCell>{o.owner_name || '-'}</TableCell>
                     <TableCell dir="ltr">{o.owner_phone || '-'}</TableCell>
                     <TableCell>{o.specialty || '-'}</TableCell>
                     <TableCell>{o.address || '-'}</TableCell>
+
                     <TableCell>
                       <Switch
                         checked={o.can_add_orders || false}
