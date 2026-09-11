@@ -219,16 +219,17 @@ export default function CourierCollections() {
     loadCourierData();
   };
 
-  const stampSelectedOrders = async (field: 'courier_collected_at' | 'courier_return_received_at', action: string) => {
+  const stampSelectedOrders = async (field: 'courier_collected_at' | 'courier_return_received_at', action: string, clear = false) => {
     if (selectedOrders.size === 0) { toast.error('اختر أوردرات أولاً'); return; }
     const ids = Array.from(selectedOrders);
-    const timestamp = new Date().toISOString();
+    const timestamp = clear ? null : new Date().toISOString();
     const { error } = await supabase.from('orders').update({ [field]: timestamp } as any).in('id', ids);
     if (error) { toast.error(error.message); return; }
     logActivity(action, { courier_id: selectedCourier, count: ids.length, timestamp });
-    toast.success(`تم تسجيل ${action} لـ ${ids.length} أوردر`);
+    toast.success(`تم ${action} لـ ${ids.length} أوردر`);
     loadCourierData();
   };
+
 
   const addBonus = async () => {
     if (!bonusAmount || !selectedCourier) return;
@@ -348,9 +349,16 @@ export default function CourierCollections() {
                     <Button size="sm" variant="outline" onClick={() => stampSelectedOrders('courier_return_received_at', 'رجوع مرتجع من المندوب')}>
                       تم رجوع المرتجع ({selectedOrders.size})
                     </Button>
+                    <Button size="sm" variant="ghost" className="text-amber-600" onClick={() => stampSelectedOrders('courier_collected_at', 'عكس تحصيل المندوب', true)}>
+                      عكس التحصيل
+                    </Button>
+                    <Button size="sm" variant="ghost" className="text-amber-600" onClick={() => stampSelectedOrders('courier_return_received_at', 'عكس رجوع المرتجع', true)}>
+                      عكس المرتجع
+                    </Button>
                     <Button size="sm" variant="destructive" onClick={closeSelectedOrders}><Lock className="h-4 w-4 ml-1" />تقفيل ({selectedOrders.size})</Button>
                   </>
                 )}
+
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
