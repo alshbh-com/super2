@@ -58,6 +58,8 @@ import TrashBin from "@/pages/TrashBin";
 import SystemGuide from "@/pages/SystemGuide";
 import OfficeDailyExpenses from "@/pages/OfficeDailyExpenses";
 import GeneralSheet from "@/pages/GeneralSheet";
+import OrderReminders from "@/pages/OrderReminders";
+import DataContacts from "@/pages/DataContacts";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -142,6 +144,8 @@ const App = () => (
               <Route path="/system-guide" element={<SystemGuide />} />
               <Route path="/chat" element={<InternalChat />} />
               <Route path="/barcode-scan" element={<BarcodeScan />} />
+              <Route path="/order-reminders" element={<OrderReminders />} />
+              <Route path="/data" element={<DataContacts />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

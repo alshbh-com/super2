@@ -15,6 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activityLogger';
 // Note: any order assigned to a courier can be closed regardless of its status
 import { ReportButton } from '@/components/ReportButton';
+import { SearchableSelect } from '@/components/SearchableSelect';
 
 const formatDateTime = (value?: string | null) => value ? new Date(value).toLocaleString('ar-EG') : '-';
 
@@ -40,12 +41,24 @@ export default function CourierCollections() {
   const [closureDate, setClosureDate] = useState(new Date().toISOString().split('T')[0]);
   const [closedOrdersOnDate, setClosedOrdersOnDate] = useState<any[]>([]);
 
+  const [openCounts, setOpenCounts] = useState<Record<string, number>>({});
+  const [closureDays, setClosureDays] = useState<string[]>([]);
+
   useEffect(() => {
     const load = async () => {
       const { data: roles } = await supabase.from('user_roles').select('user_id').eq('role', 'courier');
       if (roles && roles.length > 0) {
-        const { data: profiles } = await supabase.from('profiles').select('id, full_name, commission_amount, rejection_commission').in('id', roles.map(r => r.user_id));
+        const { data: profiles } = await supabase.from('profiles').select('id, full_name, phone, commission_amount, rejection_commission').in('id', roles.map(r => r.user_id));
         setCouriers(profiles || []);
+        const { data: openOrders } = await supabase
+          .from('orders')
+          .select('courier_id')
+          .eq('is_courier_closed', false)
+          .in('courier_id', roles.map(r => r.user_id))
+          .limit(5000);
+        const counts: Record<string, number> = {};
+        (openOrders || []).forEach((o: any) => { counts[o.courier_id] = (counts[o.courier_id] || 0) + 1; });
+        setOpenCounts(counts);
       }
       const { data: sts } = await supabase.from('order_statuses').select('*').order('sort_order');
       setStatuses(sts || []);
@@ -54,6 +67,28 @@ export default function CourierCollections() {
     };
     load();
   }, []);
+
+  // Smart closure days — only days where this courier actually has closed orders
+  useEffect(() => {
+    if (!selectedCourier) { setClosureDays([]); return; }
+    (async () => {
+      const { data } = await supabase
+        .from('orders')
+        .select('closed_at, updated_at')
+        .eq('courier_id', selectedCourier)
+        .eq('is_courier_closed', true)
+        .limit(3000);
+      const set = new Set<string>();
+      (data || []).forEach((o: any) => {
+        const d = String(o.closed_at || o.updated_at || '').slice(0, 10);
+        if (d) set.add(d);
+      });
+      const list = Array.from(set).sort((a, b) => b.localeCompare(a));
+      setClosureDays(list);
+      if (list.length > 0) setClosureDate(list[0]);
+    })();
+  }, [selectedCourier]);
+
 
   // Auto-select commission-eligible statuses when statuses load
   const COMMISSION_STATUS_NAMES = ['تم التسليم', 'تسليم جزئي', 'رفض ودفع شحن', 'استلم ودفع نص الشحن'];
@@ -219,16 +254,17 @@ export default function CourierCollections() {
     loadCourierData();
   };
 
-  const stampSelectedOrders = async (field: 'courier_collected_at' | 'courier_return_received_at', action: string) => {
+  const stampSelectedOrders = async (field: 'courier_collected_at' | 'courier_return_received_at', action: string, clear = false) => {
     if (selectedOrders.size === 0) { toast.error('اختر أوردرات أولاً'); return; }
     const ids = Array.from(selectedOrders);
-    const timestamp = new Date().toISOString();
+    const timestamp = clear ? null : new Date().toISOString();
     const { error } = await supabase.from('orders').update({ [field]: timestamp } as any).in('id', ids);
     if (error) { toast.error(error.message); return; }
     logActivity(action, { courier_id: selectedCourier, count: ids.length, timestamp });
-    toast.success(`تم تسجيل ${action} لـ ${ids.length} أوردر`);
+    toast.success(`تم ${action} لـ ${ids.length} أوردر`);
     loadCourierData();
   };
+
 
   const addBonus = async () => {
     if (!bonusAmount || !selectedCourier) return;
@@ -272,12 +308,19 @@ export default function CourierCollections() {
 
       <div className="flex flex-wrap gap-3 items-end justify-between">
         <div className="space-y-1">
-          <Label className="text-xs">المندوب</Label>
-          <Select value={selectedCourier} onValueChange={setSelectedCourier}>
-            <SelectTrigger className="w-48 bg-secondary border-border"><SelectValue placeholder="اختر مندوب" /></SelectTrigger>
-            <SelectContent>{couriers.map(c => <SelectItem key={c.id} value={c.id}>{c.full_name}</SelectItem>)}</SelectContent>
-          </Select>
+          <Label className="text-xs">المندوب (اللي عندهم أوردرات مفتوحة)</Label>
+          <SearchableSelect
+            options={couriers
+              .filter(c => (openCounts[c.id] || 0) > 0 || c.id === selectedCourier)
+              .sort((a, b) => (openCounts[b.id] || 0) - (openCounts[a.id] || 0))
+              .map(c => ({ value: c.id, label: `${c.full_name} (${openCounts[c.id] || 0})` }))}
+            value={selectedCourier}
+            onChange={setSelectedCourier}
+            placeholder="ابحث باسم المندوب"
+            triggerClassName="w-64"
+          />
         </div>
+
         {selectedCourier && orders.length > 0 && (() => {
           const courier = couriers.find(c => c.id === selectedCourier);
           const duesColumns = [
@@ -348,9 +391,16 @@ export default function CourierCollections() {
                     <Button size="sm" variant="outline" onClick={() => stampSelectedOrders('courier_return_received_at', 'رجوع مرتجع من المندوب')}>
                       تم رجوع المرتجع ({selectedOrders.size})
                     </Button>
+                    <Button size="sm" variant="ghost" className="text-amber-600" onClick={() => stampSelectedOrders('courier_collected_at', 'عكس تحصيل المندوب', true)}>
+                      عكس التحصيل
+                    </Button>
+                    <Button size="sm" variant="ghost" className="text-amber-600" onClick={() => stampSelectedOrders('courier_return_received_at', 'عكس رجوع المرتجع', true)}>
+                      عكس المرتجع
+                    </Button>
                     <Button size="sm" variant="destructive" onClick={closeSelectedOrders}><Lock className="h-4 w-4 ml-1" />تقفيل ({selectedOrders.size})</Button>
                   </>
                 )}
+
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -485,8 +535,20 @@ export default function CourierCollections() {
                   <div className="flex items-end gap-2">
                     <div className="space-y-1">
                       <Label className="text-xs">يوم التقفيل</Label>
-                      <Input type="date" value={closureDate} onChange={e => setClosureDate(e.target.value)}
-                        className="w-44 bg-secondary border-border h-8" />
+                      {closureDays.length > 0 ? (
+                        <Select value={closureDate} onValueChange={setClosureDate}>
+                          <SelectTrigger className="w-52 bg-secondary border-border h-8"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {closureDays.map(d => (
+                              <SelectItem key={d} value={d}>{new Date(d).toLocaleDateString('ar-EG', { weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit' })}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Input type="date" value={closureDate} onChange={e => setClosureDate(e.target.value)}
+                          className="w-44 bg-secondary border-border h-8" />
+                      )}
+
                     </div>
                     {closedOrdersOnDate.length > 0 && (
                       <ReportButton meta={closureMeta} columns={closureColumns} rows={closedOrdersOnDate}

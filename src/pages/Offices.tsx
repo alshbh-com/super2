@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -14,6 +15,7 @@ import { logActivity } from '@/lib/activityLogger';
 
 export default function Offices() {
   const [offices, setOffices] = useState<any[]>([]);
+  const [officeStats, setOfficeStats] = useState<Record<string, { total: number; last: string | null }>>({});
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', specialty: '', owner_name: '', owner_phone: '', address: '', notes: '', office_commission: '', return_shipping_compensation: '' });
@@ -23,7 +25,32 @@ export default function Offices() {
   const load = async () => {
     const { data } = await supabase.from('offices').select('*').order('created_at', { ascending: false });
     setOffices(data || []);
+    const { data: ords } = await supabase.from('orders').select('office_id, created_at').limit(5000);
+    const map: Record<string, { total: number; last: string | null }> = {};
+    (ords || []).forEach((o: any) => {
+      if (!o.office_id) return;
+      const cur = map[o.office_id] || { total: 0, last: null };
+      cur.total++;
+      if (!cur.last || o.created_at > cur.last) cur.last = o.created_at;
+      map[o.office_id] = cur;
+    });
+    setOfficeStats(map);
   };
+
+  const isActive = (id: string) => {
+    const last = officeStats[id]?.last;
+    if (!last) return false;
+    return (Date.now() - new Date(last).getTime()) / 86400000 <= 15;
+  };
+
+  const sortedOffices = [...offices].sort((a, b) => {
+    const act = Number(isActive(b.id)) - Number(isActive(a.id));
+    if (act !== 0) return act;
+    return (officeStats[b.id]?.total || 0) - (officeStats[a.id]?.total || 0);
+  });
+
+  const activeCount = offices.filter(o => isActive(o.id)).length;
+
 
   const set = (key: string, value: string) => setForm(f => ({ ...f, [key]: value }));
   const resetForm = () => setForm({ name: '', specialty: '', owner_name: '', owner_phone: '', address: '', notes: '', office_commission: '', return_shipping_compensation: '' });
@@ -99,6 +126,25 @@ export default function Offices() {
           </DialogContent>
         </Dialog>
       </div>
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+        <Card className="bg-card border-border"><CardContent className="p-3 text-center">
+          <p className="text-xs text-muted-foreground">إجمالي التجار</p>
+          <p className="text-2xl font-bold">{offices.length}</p>
+        </CardContent></Card>
+        <Card className="bg-emerald-50 border-emerald-200"><CardContent className="p-3 text-center">
+          <p className="text-xs text-emerald-700">نشط</p>
+          <p className="text-2xl font-bold text-emerald-700">{activeCount}</p>
+        </CardContent></Card>
+        <Card className="bg-slate-50 border-slate-200"><CardContent className="p-3 text-center">
+          <p className="text-xs text-slate-600">خامل (15 يوم بدون أوردرات)</p>
+          <p className="text-2xl font-bold text-slate-600">{offices.length - activeCount}</p>
+        </CardContent></Card>
+        <Card className="bg-amber-50 border-amber-200"><CardContent className="p-3 text-center">
+          <p className="text-xs text-amber-700">إجمالي الأوردرات</p>
+          <p className="text-2xl font-bold text-amber-700">{Object.values(officeStats).reduce((s, v) => s + v.total, 0)}</p>
+        </CardContent></Card>
+      </div>
+
       <Card className="bg-card border-border">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -106,6 +152,8 @@ export default function Offices() {
               <TableHeader>
                 <TableRow className="border-border">
                   <TableHead className="text-right">اسم المكتب</TableHead>
+                  <TableHead className="text-right">حالة التاجر</TableHead>
+                  <TableHead className="text-right">أوردرات</TableHead>
                   <TableHead className="text-right">صاحب المكتب</TableHead>
                   <TableHead className="text-right">الهاتف</TableHead>
                   <TableHead className="text-right">التخصص</TableHead>
@@ -115,13 +163,20 @@ export default function Offices() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {offices.map((o) => (
+                {sortedOffices.map((o) => (
                   <TableRow key={o.id} className="border-border">
                     <TableCell className="font-medium">{o.name}</TableCell>
+                    <TableCell>
+                      <Badge className={isActive(o.id) ? 'bg-emerald-600 text-white' : 'bg-slate-400 text-white'}>
+                        {isActive(o.id) ? 'نشط' : 'خامل'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-bold">{officeStats[o.id]?.total || 0}</TableCell>
                     <TableCell>{o.owner_name || '-'}</TableCell>
                     <TableCell dir="ltr">{o.owner_phone || '-'}</TableCell>
                     <TableCell>{o.specialty || '-'}</TableCell>
                     <TableCell>{o.address || '-'}</TableCell>
+
                     <TableCell>
                       <Switch
                         checked={o.can_add_orders || false}

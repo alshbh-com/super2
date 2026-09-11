@@ -302,19 +302,20 @@ export default function CourierMonthlyReport() {
                     return (
                       <TableRow key={o.id}>
                         <TableCell className="text-xs">{new Date(o.created_at).toLocaleDateString('ar-EG')}</TableCell>
-                        <TableCell className="font-mono">{o.barcode}</TableCell>
-                        <TableCell>{o.customer_name}</TableCell>
-                        <TableCell>{o.offices?.name || '-'}</TableCell>
-                        <TableCell>{Number(o.price || 0)}</TableCell>
-                        <TableCell>{Number(o.delivery_price || 0)}</TableCell>
+                        <TableCell className="font-mono text-foreground">{o.barcode}</TableCell>
+                        <TableCell className="text-foreground">{o.customer_name}</TableCell>
+                        <TableCell className="text-foreground">{o.offices?.name || '-'}</TableCell>
+                        <TableCell className="font-bold text-emerald-600">{Number(o.price || 0).toLocaleString()}</TableCell>
+                        <TableCell className="font-bold text-amber-600">{Number(o.delivery_price || 0).toLocaleString()}</TableCell>
                         <TableCell>
-                          <Badge style={{ backgroundColor: (o.order_statuses?.color || '#888') + '30', color: o.order_statuses?.color }}>
+                          <Badge style={{ backgroundColor: (o.order_statuses?.color || '#888') + '30', color: o.order_statuses?.color || '#333' }}>
                             {n || '-'}
                           </Badge>
                         </TableCell>
-                        <TableCell>{cc || '-'}</TableCell>
-                        <TableCell>{oc || '-'}</TableCell>
+                        <TableCell className="font-bold text-sky-600">{cc ? cc.toLocaleString() : '-'}</TableCell>
+                        <TableCell className="font-bold text-purple-600">{oc ? oc.toLocaleString() : '-'}</TableCell>
                       </TableRow>
+
                     );
                   })}
                 </TableBody>
