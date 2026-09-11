@@ -46,14 +46,21 @@ export default function BulkActionsDialog({ open, onOpenChange, orders, sessionI
   useEffect(() => {
     if (!open) return;
     (async () => {
-      const [{ data: st }, { data: cu }] = await Promise.all([
+      const [{ data: st }, { data: roles }] = await Promise.all([
         supabase.from('order_statuses').select('id, name').order('sort_order'),
-        supabase.from('profiles').select('id, full_name'),
+        supabase.from('user_roles').select('user_id').eq('role', 'courier'),
       ]);
       setStatuses((st || []) as any);
-      setCouriers((cu || []).filter((c: any) => c.full_name) as any);
+      const ids = (roles || []).map((r: any) => r.user_id);
+      if (ids.length) {
+        const { data: cu } = await supabase.from('profiles').select('id, full_name').in('id', ids);
+        setCouriers((cu || []).filter((c: any) => c.full_name) as any);
+      } else {
+        setCouriers([]);
+      }
     })();
   }, [open]);
+
 
   const ids = orders.map(o => o.id);
 

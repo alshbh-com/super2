@@ -535,8 +535,20 @@ export default function CourierCollections() {
                   <div className="flex items-end gap-2">
                     <div className="space-y-1">
                       <Label className="text-xs">يوم التقفيل</Label>
-                      <Input type="date" value={closureDate} onChange={e => setClosureDate(e.target.value)}
-                        className="w-44 bg-secondary border-border h-8" />
+                      {closureDays.length > 0 ? (
+                        <Select value={closureDate} onValueChange={setClosureDate}>
+                          <SelectTrigger className="w-52 bg-secondary border-border h-8"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {closureDays.map(d => (
+                              <SelectItem key={d} value={d}>{new Date(d).toLocaleDateString('ar-EG', { weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit' })}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Input type="date" value={closureDate} onChange={e => setClosureDate(e.target.value)}
+                          className="w-44 bg-secondary border-border h-8" />
+                      )}
+
                     </div>
                     {closedOrdersOnDate.length > 0 && (
                       <ReportButton meta={closureMeta} columns={closureColumns} rows={closedOrdersOnDate}
