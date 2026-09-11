@@ -144,6 +144,8 @@ const App = () => (
               <Route path="/system-guide" element={<SystemGuide />} />
               <Route path="/chat" element={<InternalChat />} />
               <Route path="/barcode-scan" element={<BarcodeScan />} />
+              <Route path="/order-reminders" element={<OrderReminders />} />
+              <Route path="/data" element={<DataContacts />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
