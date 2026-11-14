@@ -539,6 +539,39 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          is_read: boolean
+          kind: string
+          related_id: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          kind?: string
+          related_id?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          kind?: string
+          related_id?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       office_daily_closings: {
         Row: {
           closing_date: string
