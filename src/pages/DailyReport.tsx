@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { MultiDateFilter } from '@/components/MultiDateFilter';
 import { Printer, Package, Truck, Undo2, Calendar, Wallet } from 'lucide-react';
+import { getReportCourierCommission, getReportShipping } from '@/lib/dailyReportMetrics';
 
 const dayOf = (v?: string | null) => (v ? String(v).slice(0, 10) : '');
 
@@ -17,25 +18,30 @@ export default function DailyReport() {
   const [orders, setOrders] = useState<any[]>([]);
   const [statuses, setStatuses] = useState<any[]>([]);
   const [couriers, setCouriers] = useState<Record<string, any>>({});
+  const [deliveryRates, setDeliveryRates] = useState<any[]>([]);
 
   useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
     const since = new Date();
     since.setDate(since.getDate() - 180);
-    const [ordersRes, statusRes, profRes] = await Promise.all([
+    const [ordersRes, statusRes, profRes, ratesRes] = await Promise.all([
       supabase.from('orders').select('*, offices(name)').gte('created_at', since.toISOString()).order('created_at', { ascending: false }).limit(5000),
       supabase.from('order_statuses').select('*'),
       supabase.from('profiles').select('id, full_name, commission_amount'),
+      supabase.from('delivery_prices').select('office_id, governorate, price'),
     ]);
     setOrders(ordersRes.data || []);
     setStatuses(statusRes.data || []);
     const map: Record<string, any> = {};
     (profRes.data || []).forEach((p: any) => { map[p.id] = p; });
     setCouriers(map);
+    setDeliveryRates(ratesRes.data || []);
   };
 
-  const basisValue = (o: any) => (basis === 'collected' ? o.courier_collected_at : o.created_at);
+  const basisValue = (o: any) => basis === 'collected'
+    ? o.courier_collected_at
+    : (o.received_at || o.created_at);
 
   // Smart days: only days that actually have data for the chosen basis
   const availableDays = useMemo(() => {
@@ -68,12 +74,13 @@ export default function DailyReport() {
   const returned = filtered.filter(o => returnedStatusIds.includes(o.status_id)).length;
 
   const shippingOf = (o: any) => {
-    if (deliveredStatusIds.includes(o.status_id)) return Number(o.delivery_price || 0);
+    const shipping = getReportShipping(o, deliveryRates);
+    if (deliveredStatusIds.includes(o.status_id)) return shipping;
     if (o.status_id === rejectPaidShipId || o.status_id === halfShipId) return Number(o.shipping_paid || 0);
     return 0;
   };
   const commissionOf = (o: any) =>
-    commissionableIds.includes(o.status_id) ? Number(couriers[o.courier_id]?.commission_amount || 0) : 0;
+    getReportCourierCommission(o, Number(couriers[o.courier_id]?.commission_amount || 0), commissionableIds);
 
   const totalShipping = filtered.reduce((s, o) => s + shippingOf(o), 0);
   const totalCommission = filtered.reduce((s, o) => s + commissionOf(o), 0);
@@ -104,7 +111,7 @@ export default function DailyReport() {
       th{background:#f0f0f0} .summary{margin-top:15px;font-size:14px;font-weight:bold;text-align:center;border:2px solid #000;padding:10px}
     </style></head><body>
       <div class="header">Super shipping services - التقرير اليومي</div>
-      <div class="sub">${basis === 'collected' ? 'حسب تاريخ تحصيل المندوب' : 'حسب تاريخ إنشاء الأوردر'} — ${rangeLabel} | عدد الأوردرات: ${totalOrders}</div>
+      <div class="sub">${basis === 'collected' ? 'حسب تاريخ تحصيل المندوب' : 'حسب تاريخ تسجيل الأوردر'} — ${rangeLabel} | عدد الأوردرات: ${totalOrders}</div>
       <table><thead><tr><th>#</th><th>الباركود</th><th>العميل</th><th>المكتب</th><th>المندوب</th><th>الحالة</th><th>الشحن</th><th>عمولة المندوب</th></tr></thead>
       <tbody>${rows}</tbody></table>
       <div class="summary">تسليم: ${delivered} | مرتجع: ${returned} | إيراد الشحن: ${totalShipping.toLocaleString()} ج.م | عمولة المناديب: ${totalCommission.toLocaleString()} ج.م | صافي إيراد الشحن: ${netShipping.toLocaleString()} ج.م</div>
@@ -123,7 +130,7 @@ export default function DailyReport() {
               <SelectTrigger className="w-48 h-9 bg-secondary border-border"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="collected">تاريخ تحصيل المندوب</SelectItem>
-                <SelectItem value="created">تاريخ إنشاء الأوردر</SelectItem>
+                <SelectItem value="created">تاريخ تسجيل الأوردر</SelectItem>
               </SelectContent>
             </Select>
           </div>

@@ -14,6 +14,7 @@ import AddOrderDialog from '@/components/AddOrderDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activityLogger';
 import { moveToTrash } from '@/lib/trashUtils';
+import { SearchableSelect } from '@/components/SearchableSelect';
 
 export default function Orders() {
   const { isOwner } = useAuth();
@@ -180,10 +181,13 @@ export default function Orders() {
       {selected.size > 0 && (
         <div className="flex flex-wrap gap-2 items-center p-3 bg-secondary rounded-lg border border-border">
           <span className="text-sm font-medium">تم تحديد {selected.size}</span>
-          <Select value={assignCourier} onValueChange={setAssignCourier}>
-            <SelectTrigger className="w-36 bg-card border-border"><SelectValue placeholder="اختر مندوب" /></SelectTrigger>
-            <SelectContent>{couriers.map(c => <SelectItem key={c.id} value={c.id}>{c.full_name}</SelectItem>)}</SelectContent>
-          </Select>
+          <SearchableSelect
+            options={couriers.map(c => ({ value: c.id, label: c.full_name }))}
+            value={assignCourier}
+            onChange={setAssignCourier}
+            placeholder="ابحث واختر مندوباً"
+            triggerClassName="w-48 bg-card"
+          />
           <div className="flex flex-col gap-0.5">
             <span className="text-[10px] text-muted-foreground">تاريخ استلام المندوب</span>
             <Input type="date" value={assignDate} onChange={e => setAssignDate(e.target.value)} className="w-40 h-8 bg-card border-border" />

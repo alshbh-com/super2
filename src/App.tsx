@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -61,8 +62,16 @@ import GeneralSheet from "@/pages/GeneralSheet";
 import OrderReminders from "@/pages/OrderReminders";
 import DataContacts from "@/pages/DataContacts";
 import NotFound from "./pages/NotFound";
+import { getSavedAppTheme } from "@/lib/theme";
 
 const queryClient = new QueryClient();
+
+function ThemeController() {
+  useEffect(() => {
+    document.documentElement.dataset.theme = getSavedAppTheme();
+  }, []);
+  return null;
+}
 
 function LoginRedirect() {
   const { session, loading } = useAuth();
@@ -76,6 +85,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <ThemeController />
       <BrowserRouter>
         <AuthProvider>
           <Routes>

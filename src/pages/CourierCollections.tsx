@@ -308,12 +308,11 @@ export default function CourierCollections() {
 
       <div className="flex flex-wrap gap-3 items-end justify-between">
         <div className="space-y-1">
-          <Label className="text-xs">المندوب (اللي عندهم أوردرات مفتوحة)</Label>
+          <Label className="text-xs">المندوب (الأوردرات المفتوحة تظهر أولاً)</Label>
           <SearchableSelect
             options={couriers
-              .filter(c => (openCounts[c.id] || 0) > 0 || c.id === selectedCourier)
               .sort((a, b) => (openCounts[b.id] || 0) - (openCounts[a.id] || 0))
-              .map(c => ({ value: c.id, label: `${c.full_name} (${openCounts[c.id] || 0})` }))}
+              .map(c => ({ value: c.id, label: `${c.full_name} — ${openCounts[c.id] || 0} أوردر مفتوح` }))}
             value={selectedCourier}
             onChange={setSelectedCourier}
             placeholder="ابحث باسم المندوب"

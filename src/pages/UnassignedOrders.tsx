@@ -11,6 +11,7 @@ import { UserPlus, UserMinus, Trash2, Lock, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activityLogger';
+import { SearchableSelect } from '@/components/SearchableSelect';
 
 export default function UnassignedOrders() {
   const { isOwner } = useAuth();
@@ -144,10 +145,13 @@ export default function UnassignedOrders() {
       {selected.size > 0 && (
         <div className="flex flex-wrap gap-2 items-center p-3 bg-secondary rounded-lg border border-border">
           <span className="text-sm font-medium">تم تحديد {selected.size}</span>
-          <Select value={assignCourier} onValueChange={setAssignCourier}>
-            <SelectTrigger className="w-36 bg-card border-border"><SelectValue placeholder="اختر مندوب" /></SelectTrigger>
-            <SelectContent>{couriers.map(c => <SelectItem key={c.id} value={c.id}>{c.full_name}</SelectItem>)}</SelectContent>
-          </Select>
+          <SearchableSelect
+            options={couriers.map(c => ({ value: c.id, label: c.full_name }))}
+            value={assignCourier}
+            onChange={setAssignCourier}
+            placeholder="ابحث واختر مندوباً"
+            triggerClassName="w-48 bg-card"
+          />
           <Button size="sm" onClick={assignToCourier} disabled={!assignCourier}><UserPlus className="h-4 w-4 ml-1" />تعيين</Button>
           <Button size="sm" variant="outline" onClick={unassignCourier}><UserMinus className="h-4 w-4 ml-1" />إلغاء التعيين</Button>
           <Button size="sm" variant="secondary" onClick={closeSelected}><Lock className="h-4 w-4 ml-1" />تقفيل</Button>

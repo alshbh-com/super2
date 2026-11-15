@@ -14,6 +14,7 @@ import { logActivity } from '@/lib/activityLogger';
 import { useCourierLocation } from '@/hooks/useCourierLocation';
 import { Badge } from '@/components/ui/badge';
 import { getHiddenActiveCourierOrderIds, isCourierOrderVisible } from '@/lib/courierClosure';
+import NotificationCenter from '@/components/NotificationCenter';
 
 export default function CourierOrders() {
   const { user, logout } = useAuth();
@@ -265,6 +266,7 @@ export default function CourierOrders() {
         <div className="flex items-center justify-between">
           <h1 className="text-xl sm:text-2xl font-bold">أوردراتي</h1>
           <div className="flex items-center gap-2">
+            <NotificationCenter />
             {locationGranted === true && (
               <Badge variant="default" className="text-xs gap-1">
                 <MapPin className="h-3 w-3" /> الموقع مفعّل

@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlarmClock, Clock, Truck } from 'lucide-react';
+import { isReminderDue } from '@/lib/dailyReportMetrics';
 
 const FINAL_STATUSES = ['تم التسليم', 'مرتجع', 'ملغي', 'مرتجع لم يدفع شحن'];
 
@@ -38,8 +39,7 @@ export default function OrderReminders() {
     return orders.filter(o => {
       const st = o.order_statuses?.name;
       if (st && FINAL_STATUSES.includes(st)) return false;
-      const base = new Date(o.received_at || o.created_at).getTime();
-      if (base > limit) return false;
+      if (!isReminderDue(o.received_at, Date.now(), hours)) return false;
       if (courierFilter !== 'all' && o.courier_id !== courierFilter) return false;
       if (search.trim()) {
         const q = search.trim().toLowerCase();
@@ -50,7 +50,11 @@ export default function OrderReminders() {
     });
   }, [orders, hours, courierFilter, search, couriers]);
 
-  const ageHours = (o: any) => Math.floor((Date.now() - new Date(o.received_at || o.created_at).getTime()) / 3600000);
+  const ageHours = (o: any) => {
+    if (!o.received_at) return 0;
+    const received = new Date(`${String(o.received_at).slice(0, 10)}T00:00:00`).getTime();
+    return Math.max(0, Math.floor((Date.now() - received) / 3600000));
+  };
 
   const byCourier = useMemo(() => {
     const m = new Map<string, number>();

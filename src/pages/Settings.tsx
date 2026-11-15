@@ -7,10 +7,11 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { UserPlus, Lock } from 'lucide-react';
+import { UserPlus, Lock, BellRing, Palette } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { applyAppTheme, getSavedAppTheme, type AppTheme } from '@/lib/theme';
 
 export default function Settings() {
   const { isOwner } = useAuth();
@@ -28,11 +29,44 @@ export default function Settings() {
   const [accountingPassword, setAccountingPassword] = useState('');
   const [currentAccountingPassword, setCurrentAccountingPassword] = useState('');
   const [savingPassword, setSavingPassword] = useState(false);
+  const [theme, setTheme] = useState<AppTheme>(getSavedAppTheme);
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | 'unsupported'>(
+    typeof Notification === 'undefined' ? 'unsupported' : Notification.permission,
+  );
+  const [stockThreshold, setStockThreshold] = useState('5');
 
   useEffect(() => {
     loadStatuses();
     loadAccountingPassword();
+    void supabase.from('app_settings').select('value').eq('key', 'low_stock_threshold').maybeSingle().then(({ data }) => {
+      if (data?.value) setStockThreshold(data.value);
+    });
   }, []);
+
+  useEffect(() => {
+    const syncTheme = (event: Event) => setTheme((event as CustomEvent<AppTheme>).detail);
+    window.addEventListener('app-theme-change', syncTheme);
+    return () => window.removeEventListener('app-theme-change', syncTheme);
+  }, []);
+
+  const enableDeviceNotifications = async () => {
+    if (typeof Notification === 'undefined') {
+      setNotificationPermission('unsupported');
+      toast.error('هذا المتصفح لا يدعم إشعارات الجهاز');
+      return;
+    }
+    const permission = await Notification.requestPermission();
+    setNotificationPermission(permission);
+    if (permission === 'granted') toast.success('تم تفعيل إشعارات الجهاز');
+    else toast.error('لم يتم السماح بإشعارات الجهاز');
+  };
+
+  const saveStockThreshold = async () => {
+    const value = Math.max(0, Math.floor(Number(stockThreshold) || 0));
+    const { error } = await supabase.from('app_settings').upsert({ key: 'low_stock_threshold', value: String(value), updated_at: new Date().toISOString() }, { onConflict: 'key' });
+    if (error) toast.error('تعذر حفظ حد انخفاض المخزون');
+    else { setStockThreshold(String(value)); toast.success('تم حفظ حد التنبيه'); }
+  };
 
   const loadStatuses = async () => {
     const { data } = await supabase.from('order_statuses').select('*').order('sort_order');
@@ -98,6 +132,34 @@ export default function Settings() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">الإعدادات</h1>
+
+      <Card className="bg-card border-border">
+        <CardHeader><CardTitle className="flex items-center gap-2"><Palette className="h-5 w-5 text-primary" />المظهر والإشعارات</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="min-w-56 space-y-1">
+              <Label>ثيم التطبيق</Label>
+              <Select value={theme} onValueChange={(value: AppTheme) => { setTheme(value); applyAppTheme(value); }}>
+                <SelectTrigger className="bg-secondary border-border"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="light">فاتح — برتقالي</SelectItem>
+                  <SelectItem value="high-contrast">فاتح عالي التباين</SelectItem>
+                  <SelectItem value="dark">داكن</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button variant="outline" onClick={enableDeviceNotifications} disabled={notificationPermission === 'granted'}>
+              <BellRing className="ml-2 h-4 w-4" />
+              {notificationPermission === 'granted' ? 'إشعارات الجهاز مفعّلة' : 'تفعيل إشعارات الجهاز'}
+            </Button>
+            {notificationPermission === 'unsupported' && <span className="text-xs text-muted-foreground">المتصفح لا يدعم إشعارات الجهاز</span>}
+          </div>
+          {isOwner && <div className="flex flex-wrap items-end gap-3 border-t border-border pt-4">
+            <div className="space-y-1"><Label>إشعار انخفاض المخزون عند (قطع)</Label><Input type="number" min={0} value={stockThreshold} onChange={event => setStockThreshold(event.target.value)} className="w-40 bg-secondary border-border" /></div>
+            <Button variant="outline" onClick={saveStockThreshold}>حفظ حد التنبيه</Button>
+          </div>}
+        </CardContent>
+      </Card>
 
       {/* Accounting Password - Owner only */}
       {isOwner && (

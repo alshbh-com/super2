@@ -72,6 +72,16 @@ export default function Advances() {
       created_by: user?.id,
     });
     if (error) { toast.error(error.message); return; }
+    const adjustmentTitle = type === 'advance' ? 'تم تسجيل سلفة' : type === 'deduction' ? 'تم تسجيل خصم' : 'تم تسجيل مكافأة / إضافي';
+    const adjustmentBody = `${adjustmentTitle} بقيمة ${Number(amount).toLocaleString('ar-EG')} ج.م${reason.trim() ? ` — ${reason.trim()}` : ''}`;
+    const { error: notificationError } = await supabase.from('notifications').insert({
+      user_id: selectedEmployee,
+      title: adjustmentTitle,
+      body: adjustmentBody,
+      kind: 'payroll_adjustment',
+      related_id: (data as any)?.id ?? null,
+    } as any);
+    if (notificationError) toast.error('تم حفظ العملية، لكن تعذر إرسال إشعارها');
     logActivity('إضافة سلفة/خصم', { user_id: selectedEmployee, type, amount: parseFloat(amount) });
     toast.success('تم الإضافة');
     setDialogOpen(false);
